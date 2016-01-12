@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import indi.yume.tools.renderercalendar.R;
+
 /**
  * Created by yume on 15/9/24.
  */
