@@ -1,9 +1,9 @@
 # FragmentManager
-Fragment切换方法的封装
-1、提供多栈管理（官方的fragment是单栈的）
-2、简化Fragment的管理
-3、完全模仿Activity的接口方法和回调（如startFragment()、finish()等）
-4、通过Intent启动，通过onFragmentResult()方法回调
+Fragment切换方法的封装  
+1、提供多栈管理（官方的fragment是单栈的）  
+2、简化Fragment的管理  
+3、完全模仿Activity的接口方法和回调（如startFragment()、finish()等）  
+4、通过Intent启动，通过onFragmentResult()方法回调  
 
 ## 添加到Android studio
 Step1: 在根build.gradle中添加仓库：
