@@ -201,16 +201,6 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
 
         showStackByTag(targetTag, fragmentTransaction);
         fragmentTransaction.commit();
-
-//        fragmentManager.executePendingTransactions();
-
-//        int showCount = 0;
-//        for(BaseManagerFragment fragment_ : fragmentMap.get(targetTag))
-//            if(!fragment_.isHidden()) {
-//                showCount++;
-//                System.out.println("BaseFragmentManagerActivity: addToStack; fragment_= " + fragment_ + " ; isHide= " + fragment_.isHidden());
-//            }
-//        System.out.println("BaseFragmentManagerActivity: addToStack; showCount= " + showCount);
     }
 
     private void clearStackByTag(String tag, FragmentTransaction fragmentTransaction){

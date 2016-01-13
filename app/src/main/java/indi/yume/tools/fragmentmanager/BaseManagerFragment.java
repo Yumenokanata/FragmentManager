@@ -112,6 +112,26 @@ public abstract class BaseManagerFragment extends Fragment {
         ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack);
     }
 
+    protected void onHide(){ }
+
+    protected void onShow(){ }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        onHide();
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if(hidden){
+            onHide();
+        } else{
+            onShow();
+        }
+    }
+
     private BaseManagerFragment getFragmentByIntent(Intent intent){
         Class clazz;
         try {
