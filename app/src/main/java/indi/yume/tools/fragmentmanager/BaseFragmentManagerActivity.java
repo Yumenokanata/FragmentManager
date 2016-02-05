@@ -2,6 +2,7 @@ package indi.yume.tools.fragmentmanager;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -18,17 +19,20 @@ import indi.yume.tools.renderercalendar.R;
  * Created by yume on 15/9/24.
  */
 public abstract class BaseFragmentManagerActivity extends FragmentActivity {
-    Map<String, List<BaseManagerFragment>> fragmentMap = new HashMap<>();
-    Map<String, Class<?>> baseFragmentMap;
-    String currentStackTag;
-    FragmentManager fragmentManager;
-    OnStackChangedListener mOnStackChangedListener;
+    private static final String SAVE_STATE_KEY_CURRENT_STACK_TAG = "current_stack_tag";
+    private static final String SAVE_STATE_KEY_TAG_LIST_TAG = "tag_list_key";
+
+    private Map<String, List<BaseManagerFragment>> fragmentMap = new HashMap<>();
+    private Map<String, Class<? extends BaseManagerFragment>> baseFragmentMap;
+    private String currentStackTag;
+    private FragmentManager fragmentManager;
+    private OnStackChangedListener mOnStackChangedListener;
 
     private boolean isStartForResult = false;
 
     public abstract int fragmentViewId();
 
-    public abstract Map<String, Class<?>> BaseFragmentWithTag();
+    public abstract Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag();
 
     public boolean clearStackWhenStackChanged(String targetTag, String currentTag){
         return false;
@@ -49,6 +53,61 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         baseFragmentMap = BaseFragmentWithTag();
         if(baseFragmentMap == null)
             throw new Error("BaseFragmentWithTag() must return value");
+
+        if(savedInstanceState != null) {
+            restoreManageData(savedInstanceState);
+            String stackTag = savedInstanceState.getString(SAVE_STATE_KEY_CURRENT_STACK_TAG);
+            if (!TextUtils.isEmpty(stackTag)) {
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                for(String tag : fragmentMap.keySet())
+                    if(!TextUtils.equals(tag, stackTag))
+                        hideStackByTag(tag, transaction);
+                showStackByTag(stackTag, transaction);
+                transaction.commit();
+                currentStackTag = stackTag;
+            }
+        }
+    }
+
+    private void restoreManageData(Bundle savedInstanceState) {
+        List<String> tagList = savedInstanceState.getStringArrayList(SAVE_STATE_KEY_TAG_LIST_TAG);
+        if(tagList == null)
+            return;
+
+        for(String tag : tagList) {
+            List<String> fragmentHashList = savedInstanceState.getStringArrayList(tag);
+            if(fragmentHashList != null) {
+                List<BaseManagerFragment> fragmentList = new ArrayList<>();
+                for(String fragmentHash : fragmentHashList) {
+                    Fragment fragment = fragmentManager.findFragmentByTag(fragmentHash);
+                    if(fragment instanceof BaseManagerFragment) {
+                        ((BaseManagerFragment) fragment).setHashTag(fragmentHash);
+                        fragmentList.add((BaseManagerFragment) fragment);
+                    }
+                }
+                fragmentMap.put(tag, fragmentList);
+            }
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString(SAVE_STATE_KEY_CURRENT_STACK_TAG, currentStackTag);
+
+        ArrayList<String> tagList = new ArrayList<>();
+        for(Map.Entry<String, List<BaseManagerFragment>> entry : fragmentMap.entrySet()) {
+            List<BaseManagerFragment> fragmentList = entry.getValue();
+            if(fragmentList != null){
+                ArrayList<String> fragmentCodeList = new ArrayList<>();
+                for(BaseManagerFragment fragment : fragmentList)
+                    fragmentCodeList.add(fragment.getHashTag());
+                outState.putStringArrayList(entry.getKey(), fragmentCodeList);
+                tagList.add(entry.getKey());
+            }
+        }
+        outState.putStringArrayList(SAVE_STATE_KEY_TAG_LIST_TAG, tagList);
     }
 
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
@@ -133,11 +192,15 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             this.switchToStackByTag(tag, clearStackWhenStackChanged(tag, currentStackTag));
     }
 
-    public void switchToStackByTag(String tag, boolean clearCurrentStack){
+    public void switchToStackByTag(String tag, boolean clearCurrentStack) {
+        switchToStackByTag(tag, clearCurrentStack, false);
+    }
+
+    private void switchToStackByTag(String tag, boolean clearCurrentStack, boolean forceSwitch){
         if(!baseFragmentMap.containsKey(tag))
             throw new Error("Tag: " + tag + " not in baseFragmentMap. [BaseFragmentWithTag()]");
 
-        if((fragmentMap.containsKey(tag) && !TextUtils.equals(tag, currentStackTag))
+        if((fragmentMap.containsKey(tag) && (forceSwitch || !TextUtils.equals(tag, currentStackTag)))
                 || (!fragmentMap.containsKey(tag) || fragmentMap.get(tag).size() == 0)){
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
@@ -197,7 +260,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
 //                R.anim.fragment_left_enter,
 //                R.anim.fragment_left_exit);
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        fragmentTransaction.add(fragmentViewId(), fragment, fragment.toString());
+        fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());
 
         showStackByTag(targetTag, fragmentTransaction);
         fragmentTransaction.commit();
@@ -213,7 +276,8 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     private void hideStackByTag(String tag, FragmentTransaction fragmentTransaction){
         List<BaseManagerFragment> list = fragmentMap.get(tag);
         for(BaseManagerFragment fragment : list)
-            fragmentTransaction.hide(fragment);
+            if(!fragment.isHidden())
+                fragmentTransaction.hide(fragment);
     }
 
     private void showStackByTag(String tag, FragmentTransaction fragmentTransaction){
@@ -226,14 +290,16 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             if (fragment == null)
                 throw new Error("baseFragmentMap [BaseFragmentWithTag()] has wrong");
             fragment.setIntent(getIntent());
-            fragmentTransaction.add(fragmentViewId(), fragment, fragment.toString());
+            fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());
             list.add(fragment);
             return;
         } else{
-            for(String key : fragmentMap.keySet())
-                for(BaseManagerFragment f : fragmentMap.get(key))
-                    fragmentTransaction.hide(f);
-            fragmentTransaction.show(list.get(list.size() - 1));
+            BaseManagerFragment willShowFragment = list.get(list.size() - 1);
+            for(Map.Entry<String, List<BaseManagerFragment>> entry : fragmentMap.entrySet())
+                for(BaseManagerFragment f : entry.getValue())
+                    if(willShowFragment != f && !f.isHidden())
+                        fragmentTransaction.hide(f);
+            fragmentTransaction.show(willShowFragment);
         }
 
 //        for(BaseManagerFragment fragment : list)

@@ -4,16 +4,19 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 
 /**
  * Created by yume on 15/9/24.
  */
 public abstract class BaseManagerFragment extends Fragment {
     private static final String INTENT_KEY_REQUEST_CODE = "requestCode";
+    private static final String SAVE_STORE_HASH_CODE = "hash_code";
 
     public static final String INTENT_KEY_STACK_TAG = "stackTag";
 
     private String stackTag;
+    private String hashTag;
 
     private Intent fromIntent;
 
@@ -24,17 +27,27 @@ public abstract class BaseManagerFragment extends Fragment {
     public BaseManagerFragment() {
         super();
         stackTag = setDefaultStackTag();
+        hashTag = String.valueOf(hashCode());
     }
 
     protected String setDefaultStackTag(){
         return null;
-    };
+    }
 
     public String getStackTag(){
         return stackTag;
     }
 
-    public void setIntent(Intent intent){
+    public String getHashTag(){
+        return hashTag;
+    }
+
+    void setHashTag(String hashTag){
+        if(!TextUtils.isEmpty(hashTag))
+            this.hashTag = hashTag;
+    }
+
+    void setIntent(Intent intent){
         fromIntent = intent;
         requestCode = intent.getIntExtra(INTENT_KEY_REQUEST_CODE, -1);
         stackTag = intent.getStringExtra(INTENT_KEY_STACK_TAG);
@@ -130,6 +143,19 @@ public abstract class BaseManagerFragment extends Fragment {
         } else{
             onShow();
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(SAVE_STORE_HASH_CODE, hashTag);
+    }
+
+    @Override
+    public void onViewStateRestored(Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if(savedInstanceState != null)
+            hashTag = savedInstanceState.getString(SAVE_STORE_HASH_CODE, hashTag);
     }
 
     private BaseManagerFragment getFragmentByIntent(Intent intent){

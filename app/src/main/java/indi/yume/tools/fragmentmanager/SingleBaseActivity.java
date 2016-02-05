@@ -13,10 +13,10 @@ import java.util.Map;
 public abstract class SingleBaseActivity extends BaseFragmentManagerActivity {
     protected static final String SINGLE_TAG = "tag";
 
-    private Map<String, Class<?>> map = new HashMap<>();
+    private Map<String, Class<? extends BaseManagerFragment>> map = new HashMap<>();
 
     @Override
-    public Map<String, Class<?>> BaseFragmentWithTag() {
+    public Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag() {
         return map;
     }
 
@@ -24,7 +24,7 @@ public abstract class SingleBaseActivity extends BaseFragmentManagerActivity {
     protected void onCreate(Bundle savedInstanceState) {
         String className = getIntent().getStringExtra(INTENT_KEY_FRAGMENT_CLASS);
         try {
-            map.put(SINGLE_TAG, Class.forName(className));
+            map.put(SINGLE_TAG, (Class<? extends BaseManagerFragment>) Class.forName(className));
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
