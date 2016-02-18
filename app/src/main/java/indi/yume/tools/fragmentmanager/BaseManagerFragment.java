@@ -129,6 +129,8 @@ public abstract class BaseManagerFragment extends Fragment {
 
     protected void onShow(){ }
 
+    protected void preBackResultData(){ }
+
     @Override
     public void onPause() {
         super.onPause();

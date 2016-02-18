@@ -338,6 +338,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
         if(list.size() == 0) {
             Intent intent = new Intent();
+            fragment.preBackResultData();
             if(fragment.getResultData() != null)
                 intent.putExtras(fragment.getResultData());
             setResult(fragment.getResultCode(), intent);
@@ -346,6 +347,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             overridePendingTransition(R.anim.activity_enter, R.anim.activity_exit);
         } else{
             BaseManagerFragment fragment1 = list.get(list.size() - 1);
+            fragment.preBackResultData();
             if(fragment.getRequestCode() != -1)
                 fragment1.onFragmentResult(fragment.getRequestCode(),
                         fragment.getResultCode(),
@@ -364,6 +366,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             if(list.size() == 1) {
                 BaseManagerFragment fragment = list.get(0);
                 Intent intent = new Intent();
+                fragment.preBackResultData();
                 if(fragment.getResultData() != null)
                     intent.putExtras(fragment.getResultData());
                 setResult(fragment.getRequestCode(), intent);
@@ -382,6 +385,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             list.remove(fragment);
 
             BaseManagerFragment fragment1 = list.get(list.size() - 1);
+            fragment.preBackResultData();
             if(fragment.getRequestCode() != -1)
                 fragment1.onFragmentResult(fragment.getRequestCode(),
                         fragment.getResultCode(),
