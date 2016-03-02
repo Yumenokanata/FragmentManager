@@ -84,8 +84,8 @@ public abstract class BaseManagerFragment extends Fragment {
     @CallSuper
     //Override to handle event when {@link #startFragmentForResult(Intent, int)}
     public void onFragmentResult(int requestCode, int resultCode, Bundle data){
-        for(OnFragmentResultListener listener : resultListenerList)
-            listener.onFragmentResult(requestCode, resultCode, data);
+        for(int i = 0; i < resultListenerList.size(); i++)
+            resultListenerList.get(i).onFragmentResult(requestCode, resultCode, data);
     }
 
     public void registerFragmentResultListener(OnFragmentResultListener listener) {

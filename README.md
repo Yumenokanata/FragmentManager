@@ -19,7 +19,7 @@ allprojects {
 Step2: 在工程中添加依赖：
 ```groovy
 dependencies {
-    compile 'com.github.Yumenokanata:FragmentManager:1.2'
+    compile 'com.github.Yumenokanata:FragmentManager:1.2.1'
 }
 ```
 
