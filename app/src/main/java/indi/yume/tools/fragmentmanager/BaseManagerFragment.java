@@ -3,8 +3,12 @@ package indi.yume.tools.fragmentmanager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
+import android.support.annotation.CallSuper;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by yume on 15/9/24.
@@ -23,6 +27,7 @@ public abstract class BaseManagerFragment extends Fragment {
     private int requestCode = -1;
     private int resultCode = -1;
     private Bundle resultData = null;
+    private List<OnFragmentResultListener> resultListenerList = new ArrayList<>();
 
     public BaseManagerFragment() {
         super();
@@ -76,9 +81,24 @@ public abstract class BaseManagerFragment extends Fragment {
         return fromIntent;
     }
 
+    @CallSuper
     //Override to handle event when {@link #startFragmentForResult(Intent, int)}
     public void onFragmentResult(int requestCode, int resultCode, Bundle data){
+        for(OnFragmentResultListener listener : resultListenerList)
+            listener.onFragmentResult(requestCode, resultCode, data);
+    }
 
+    public void registerFragmentResultListener(OnFragmentResultListener listener) {
+        if(listener != null)
+            resultListenerList.add(listener);
+    }
+
+    public boolean unregisterFragmentResultListener(OnFragmentResultListener listener) {
+        return listener != null && resultListenerList.remove(listener);
+    }
+
+    public void unregisterAllFragmentResultListener() {
+        resultListenerList.clear();
     }
 
     protected void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
@@ -199,5 +219,9 @@ public abstract class BaseManagerFragment extends Fragment {
             }
             throw new Error("Must run on main thread!");
         }
+    }
+
+    public static interface OnFragmentResultListener {
+        void onFragmentResult(int requestCode, int resultCode, Bundle data);
     }
 }
