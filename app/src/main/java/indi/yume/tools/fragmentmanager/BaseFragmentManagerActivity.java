@@ -373,29 +373,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                     break;
                 }
 
-        List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
-        if(list.size() == 0) {
-            fragment.preBackResultData();
-            Intent intent = new Intent();
-            if(fragment.getResultData() != null)
-                intent.putExtras(fragment.getResultData());
-            setResult(fragment.getResultCode(), intent);
-
-            supportFinishAfterTransition();
-            if(isShowAnimWhenFinish)
-                overridePendingTransition(0, fragmentExitAnim);
-        } else{
-            BaseManagerFragment fragment1 = list.get(list.size() - 1);
-            fragment.preBackResultData();
-            if(fragment.getRequestCode() != -1)
-                fragment1.onFragmentResult(fragment.getRequestCode(),
-                        fragment.getResultCode(),
-                        fragment.getResultData());
-
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            showStackByTagNoAnim(currentStackTag, fragmentTransaction);
-            fragmentTransaction.commit();
-        };
+        removeFragmentWithAnim(currentStackTag);
     }
 
     @Override
