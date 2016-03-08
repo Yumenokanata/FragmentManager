@@ -2,18 +2,25 @@ package indi.yume.tools.fragmentmanager;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.AnimRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import indi.yume.tools.renderercalendar.R;
+import rx.functions.Action0;
 
 /**
  * Created by yume on 15/9/24.
@@ -30,6 +37,13 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
 
     private boolean isStartForResult = false;
 
+    @AnimRes
+    private int fragmentExitAnim = R.anim.fragment_left_exit;
+    @AnimRes
+    private int fragmentEnterAnim = R.anim.fragment_left_enter;
+    @AnimRes
+    private int activityEnterStayAnim = R.anim.stay_anim;
+
     public abstract int fragmentViewId();
 
     public abstract Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag();
@@ -44,6 +58,33 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
 
     protected String getCurrentStackTag() {
         return currentStackTag;
+    }
+
+    public void setFragmentAnim(@AnimRes int enterAnim,
+                                @AnimRes int exitAnim) {
+        this.fragmentEnterAnim = enterAnim;
+        this.fragmentExitAnim = exitAnim;
+    }
+
+    /**
+     *
+     * @param activityEnterStyAnim set anim when startNewActivity
+     *                             {@link this#startFragmentOnNewActivity(Intent, Class)}
+     *                             {@link this#startFragmentOnNewActivityForResult(Intent, Class, int)}
+     *                             you can set 0 will not have anim (background is black),
+     *                             this anim just work for stay old activity when start a new activity,
+     *                             default this time is 2000ms:
+     *                             <translate xmlns:android="http://schemas.android.com/apk/res/android"
+     *                                 android:fromYDelta="0%p" android:toYDelta="0%p"
+     *                                 android:duration="2000" />
+     *                             please set animation time to fit your enter anim for start new activity.
+     */
+    public void setFragmentAnim(@AnimRes int enterAnim,
+                                @AnimRes int exitAnim,
+                                @AnimRes int activityEnterStyAnim) {
+        this.fragmentEnterAnim = enterAnim;
+        this.fragmentExitAnim = exitAnim;
+        this.activityEnterStayAnim = activityEnterStyAnim;
     }
 
     @Override
@@ -62,7 +103,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                 for(String tag : fragmentMap.keySet())
                     if(!TextUtils.equals(tag, stackTag))
                         hideStackByTag(tag, transaction);
-                showStackByTag(stackTag, transaction);
+                showStackByTagNoAnim(stackTag, transaction);
                 transaction.commit();
                 currentStackTag = stackTag;
             }
@@ -113,7 +154,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
         try {
             startActivity(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent));
-            overridePendingTransition(R.anim.activity_enter, R.anim.activity_exit);
+            overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -122,7 +163,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int resultCode){
         try {
             startActivityForResult(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent), resultCode);
-            overridePendingTransition(R.anim.activity_enter, R.anim.activity_exit);
+            overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
             isStartForResult = true;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -210,7 +251,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                 else
                     hideStackByTag(currentStackTag, fragmentTransaction);
 
-            showStackByTag(tag, fragmentTransaction);
+            showStackByTagNoAnim(tag, fragmentTransaction);
             currentStackTag = tag;
             fragmentTransaction.commit();
         }
@@ -222,7 +263,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
             clearStackByTag(currentStackTag, fragmentTransaction);
 
-        showStackByTag(currentStackTag, fragmentTransaction);
+        showStackByTagNoAnim(currentStackTag, fragmentTransaction);
         fragmentTransaction.commit();
     }
 
@@ -246,24 +287,11 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             fragmentMap.put(targetTag, new ArrayList<BaseManagerFragment>());
 
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-//        if(currentStackTag != null && !TextUtils.equals(currentStackTag, targetTag)) {
-        if(clearCurrentStack){
+        if(clearCurrentStack)
             clearStackByTag(currentStackTag, fragmentTransaction);
-        } else {
-            hideStackByTag(currentStackTag, fragmentTransaction);
-        }
-//        }
 
         currentStackTag = targetTag;
-        fragmentMap.get(targetTag).add(fragment);
-//        fragmentTransaction.setCustomAnimations(
-//                R.anim.fragment_left_enter,
-//                R.anim.fragment_left_exit);
-        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());
-
-        showStackByTag(targetTag, fragmentTransaction);
-        fragmentTransaction.commit();
+        addFragmentWithAnim(currentStackTag, fragment);
     }
 
     private void clearStackByTag(String tag, FragmentTransaction fragmentTransaction){
@@ -280,9 +308,9 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                 fragmentTransaction.hide(fragment);
     }
 
-    private void showStackByTag(String tag, FragmentTransaction fragmentTransaction){
+    private void showStackByTagNoAnim(String tag, FragmentTransaction fragmentTransaction){
         if(!fragmentMap.containsKey(tag))
-            fragmentMap.put(tag, new ArrayList<BaseManagerFragment>());
+            fragmentMap.put(tag, new LinkedList<BaseManagerFragment>());
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
         if(list.size() == 0) {
@@ -338,23 +366,21 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
         if(list.size() == 0) {
             Intent intent = new Intent();
-            fragment.preBackResultData();
             if(fragment.getResultData() != null)
                 intent.putExtras(fragment.getResultData());
             setResult(fragment.getResultCode(), intent);
 
             supportFinishAfterTransition();
-            overridePendingTransition(R.anim.activity_enter, R.anim.activity_exit);
+            overridePendingTransition(0, fragmentExitAnim);
         } else{
             BaseManagerFragment fragment1 = list.get(list.size() - 1);
-            fragment.preBackResultData();
             if(fragment.getRequestCode() != -1)
                 fragment1.onFragmentResult(fragment.getRequestCode(),
                         fragment.getResultCode(),
                         fragment.getResultData());
 
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            showStackByTag(currentStackTag, fragmentTransaction);
+            showStackByTagNoAnim(currentStackTag, fragmentTransaction);
             fragmentTransaction.commit();
         };
     }
@@ -362,39 +388,116 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     @Override
     public void onBackPressed() {
         List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
+        if(list.size() > 0) {
+            BaseManagerFragment fragment = list.get(list.size() - 1);
+            if(fragment.onBackPressed())
+                return;
+        }
+
+        removeFragmentWithAnim(currentStackTag);
+    }
+
+    private void removeFragmentWithAnim(String tag) {
+        List<BaseManagerFragment> list = fragmentMap.get(tag);
         if(list.size() <= 1) {
             if(list.size() == 1) {
                 BaseManagerFragment fragment = list.get(0);
                 Intent intent = new Intent();
-                fragment.preBackResultData();
                 if(fragment.getResultData() != null)
                     intent.putExtras(fragment.getResultData());
                 setResult(fragment.getRequestCode(), intent);
             }
             supportFinishAfterTransition();
-            overridePendingTransition(R.anim.activity_enter, R.anim.activity_exit);
+            overridePendingTransition(0, fragmentExitAnim);
         } else {
-            BaseManagerFragment fragment = list.get(list.size() - 1);
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-//            fragmentTransaction.setCustomAnimations(
-//                    R.anim.fragment_left_enter,
-//                    R.anim.fragment_left_exit);
-            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE);
-            fragmentTransaction.remove(fragment)
-                    .commit();
+            final BaseManagerFragment fragment = list.get(list.size() - 1);
             list.remove(fragment);
 
             BaseManagerFragment fragment1 = list.get(list.size() - 1);
-            fragment.preBackResultData();
             if(fragment.getRequestCode() != -1)
                 fragment1.onFragmentResult(fragment.getRequestCode(),
                         fragment.getResultCode(),
                         fragment.getResultData());
 
-            FragmentTransaction fragmentTransaction1 = fragmentManager.beginTransaction();
-            showStackByTag(currentStackTag, fragmentTransaction1);
-            fragmentTransaction1.commit();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//            showStackByTagNoAnim(currentStackTag, fragmentTransaction1);
+            fragmentTransaction.show(fragment1);
+
+            if(fragmentExitAnim == 0) {
+                fragmentTransaction.remove(fragment)
+                        .commit();
+            } else {
+                fragmentTransaction.commit();
+
+                startAnimation(fragmentExitAnim,
+                        fragment.getView(),
+                        new Action0() {
+                            @Override
+                            public void call() {
+                                fragmentManager.beginTransaction()
+                                        .remove(fragment)
+                                        .commit();
+                            }
+                        });
+            }
         }
+    }
+
+    private void addFragmentWithAnim(String tag,
+                                     BaseManagerFragment nextFragment) {
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        List<BaseManagerFragment> list = fragmentMap.get(tag);
+        if(list.size() > 0 && fragmentEnterAnim != 0) {
+            final BaseManagerFragment backFragment = list.get(list.size() - 1);
+            nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
+                @Override
+                public void onCreatedView(View view) {
+                    startAnimation(fragmentEnterAnim,
+                            view,
+                            new Action0() {
+                                @Override
+                                public void call() {
+                                    fragmentManager.beginTransaction()
+                                            .hide(backFragment)
+                                            .commit();
+                                }
+                            });
+                }
+            });
+
+            fragmentTransaction.show(backFragment);
+            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
+            fragmentTransaction.commit();
+        } else {
+            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
+            fragmentTransaction.commit();
+        }
+        list.add(nextFragment);
+    }
+
+    private void startAnimation(@AnimRes int animRes, View view, final Action0 doOnOver) {
+        if(view.getBackground() == null)
+            view.setBackgroundColor(ContextCompat.getColor(this, R.color.white));
+
+        Animation animation = AnimationUtils.loadAnimation(this, animRes);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                doOnOver.call();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        view.startAnimation(animation);
     }
 
     public static interface OnStackChangedListener {

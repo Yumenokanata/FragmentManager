@@ -6,18 +6,29 @@ import android.os.Looper;
 import android.support.annotation.CallSuper;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
+import android.view.View;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action1;
+import rx.subjects.PublishSubject;
+import rx.subjects.SerializedSubject;
+import rx.subjects.Subject;
 
 /**
  * Created by yume on 15/9/24.
  */
 public abstract class BaseManagerFragment extends Fragment {
+    private static final Random random = new Random();
+
     private static final String INTENT_KEY_REQUEST_CODE = "requestCode";
     private static final String SAVE_STORE_HASH_CODE = "hash_code";
 
     public static final String INTENT_KEY_STACK_TAG = "stackTag";
+
+    private OnCreatedViewListener onCreatedViewListener;
 
     private String stackTag;
     private String hashTag;
@@ -27,7 +38,9 @@ public abstract class BaseManagerFragment extends Fragment {
     private int requestCode = -1;
     private int resultCode = -1;
     private Bundle resultData = null;
-    private List<OnFragmentResultListener> resultListenerList = new ArrayList<>();
+
+    private Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>> onResultSubject
+            = new SerializedSubject<>(PublishSubject.<Tuple3<Integer, Integer, Bundle>>create());
 
     public BaseManagerFragment() {
         super();
@@ -81,24 +94,13 @@ public abstract class BaseManagerFragment extends Fragment {
         return fromIntent;
     }
 
-    @CallSuper
+    public void setOnCreatedViewListener(OnCreatedViewListener onCreatedViewListener) {
+        this.onCreatedViewListener = onCreatedViewListener;
+    }
+
     //Override to handle event when {@link #startFragmentForResult(Intent, int)}
     public void onFragmentResult(int requestCode, int resultCode, Bundle data){
-        for(int i = 0; i < resultListenerList.size(); i++)
-            resultListenerList.get(i).onFragmentResult(requestCode, resultCode, data);
-    }
-
-    public void registerFragmentResultListener(OnFragmentResultListener listener) {
-        if(listener != null)
-            resultListenerList.add(listener);
-    }
-
-    public boolean unregisterFragmentResultListener(OnFragmentResultListener listener) {
-        return listener != null && resultListenerList.remove(listener);
-    }
-
-    public void unregisterAllFragmentResultListener() {
-        resultListenerList.clear();
+        onResultSubject.onNext(Tuple3.of(requestCode, resultCode, data));
     }
 
     protected void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
@@ -145,11 +147,46 @@ public abstract class BaseManagerFragment extends Fragment {
         ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack);
     }
 
+    public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
+        return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
+            @Override
+            public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
+                final int requestCode = random.nextInt();
+                startFragmentForResult(intent, requestCode);
+                onResultSubject.subscribe(
+                        new Action1<Tuple3<Integer, Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple3<Integer, Integer, Bundle> tuple) {
+                                if (requestCode == tuple.getData1())
+                                    sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                sub.onCompleted();
+                            }
+                        },
+                        new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                sub.onError(throwable);
+                            }
+                        });
+            }
+        });
+    }
+
+    @CallSuper
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if(onCreatedViewListener != null)
+            onCreatedViewListener.onCreatedView(view);
+    }
+
     protected void onHide(){ }
 
     protected void onShow(){ }
 
-    protected void preBackResultData(){ }
+    protected boolean onBackPressed() {
+        return false;
+    }
 
     @Override
     public void onPause() {
@@ -221,7 +258,7 @@ public abstract class BaseManagerFragment extends Fragment {
         }
     }
 
-    public static interface OnFragmentResultListener {
-        void onFragmentResult(int requestCode, int resultCode, Bundle data);
+    interface OnCreatedViewListener {
+        void onCreatedView(View view);
     }
 }
