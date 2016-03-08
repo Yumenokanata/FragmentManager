@@ -44,6 +44,8 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     @AnimRes
     private int activityEnterStayAnim = R.anim.stay_anim;
 
+    private boolean isShowAnimWhenFinish = true;
+
     public abstract int fragmentViewId();
 
     public abstract Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag();
@@ -85,6 +87,14 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         this.fragmentEnterAnim = enterAnim;
         this.fragmentExitAnim = exitAnim;
         this.activityEnterStayAnim = activityEnterStyAnim;
+    }
+
+    public boolean isShowAnimWhenFinish() {
+        return isShowAnimWhenFinish;
+    }
+
+    public void setIsShowAnimWhenFinish(boolean isShowAnimWhenFinish) {
+        this.isShowAnimWhenFinish = isShowAnimWhenFinish;
     }
 
     @Override
@@ -372,7 +382,8 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             setResult(fragment.getResultCode(), intent);
 
             supportFinishAfterTransition();
-            overridePendingTransition(0, fragmentExitAnim);
+            if(isShowAnimWhenFinish)
+                overridePendingTransition(0, fragmentExitAnim);
         } else{
             BaseManagerFragment fragment1 = list.get(list.size() - 1);
             fragment.preBackResultData();
@@ -411,7 +422,8 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                 setResult(fragment.getRequestCode(), intent);
             }
             supportFinishAfterTransition();
-            overridePendingTransition(0, fragmentExitAnim);
+            if(isShowAnimWhenFinish)
+                overridePendingTransition(0, fragmentExitAnim);
         } else {
             final BaseManagerFragment fragment = list.get(list.size() - 1);
             list.remove(fragment);
