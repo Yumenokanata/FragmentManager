@@ -184,6 +184,8 @@ public abstract class BaseManagerFragment extends Fragment {
 
     protected void onShow(){ }
 
+    protected void preBackResultData(){ }
+
     protected boolean onBackPressed() {
         return false;
     }
