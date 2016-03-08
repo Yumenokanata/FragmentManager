@@ -1,3 +1,5 @@
+[![](https://jitpack.io/v/Yumenokanata/FragmentManager.svg)](https://jitpack.io/#Yumenokanata/FragmentManager)
+
 # FragmentManager
 Fragment切换方法的封装  
 1. 提供多栈管理（官方的fragment是单栈的）  
