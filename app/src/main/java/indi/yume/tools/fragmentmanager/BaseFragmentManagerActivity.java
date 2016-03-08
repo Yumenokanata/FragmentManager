@@ -365,15 +365,18 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         for(String key : fragmentMap.keySet())
             for(BaseManagerFragment f : fragmentMap.get(key))
                 if(f == fragment) {
-                    fragmentManager.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
-                            .remove(fragment)
-                            .commit();
-                    fragmentMap.get(key).remove(f);
+                    if (key != null
+                            && key.equals(currentStackTag)
+                            && f == fragmentMap.get(key).get(fragmentMap.get(key).size() - 1)) {
+                        removeFragmentWithAnim(currentStackTag);
+                    } else {
+                        fragmentManager.beginTransaction()
+                                .remove(fragment)
+                                .commit();
+                        fragmentMap.get(key).remove(f);
+                    }
                     break;
                 }
-
-        removeFragmentWithAnim(currentStackTag);
     }
 
     @Override
