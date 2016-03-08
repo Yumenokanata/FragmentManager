@@ -1,9 +1,11 @@
 # FragmentManager
 Fragment切换方法的封装  
-1、提供多栈管理（官方的fragment是单栈的）  
-2、简化Fragment的管理  
-3、完全模仿Activity的接口方法和回调（如startFragment()、finish()等）  
-4、通过Intent启动，通过onFragmentResult()方法回调  
+1. 提供多栈管理（官方的fragment是单栈的）  
+2. 简化Fragment的管理  
+3. 完全模仿Activity的接口方法和回调（如startFragment()、finish()等）  
+4. 通过Intent启动，通过onFragmentResult()方法回调  
+5. ___NEW___ 使用Rx的方式启动Fragment: startFragmentForObservable(Intent intent)  
+6. ___NEW___ 自定义Fragment切换动画
 
 ## 添加到Android studio
 Step1: 在根build.gradle中添加仓库：
@@ -53,6 +55,7 @@ startFragment(Intent)  //通过Intent启动一个Fragment
 onFragmentResult(Intent) //通过Intent启动一个Fragment，并在这个新Fragment结束后回调onFragmentResult方法
 finish() //结束当前的Fragment
 startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz) //在新Activity中启动Fragment
+startFragmentForObservable(Intent intent) // 使用Rxjava的方式启动新的Fragment
 
 onFragmentResult(int requestCode, int resultCode, Bundle data) //回调方法
 ```
@@ -60,6 +63,11 @@ onFragmentResult(int requestCode, int resultCode, Bundle data) //回调方法
 5、Activity中的使用
 ```java
 switchToStackByTag(String tag)  //切换栈
+```
+
+6、自定义Fragment进入和退出动画
+```java
+BaseFragmentManagerActivity.setFragmentAnim(int enterAnim, int exitAnim)
 ```
 
 ###License
