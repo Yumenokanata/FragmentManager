@@ -1,0 +1,51 @@
+package com.fenrir.app.sample;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+
+/**
+ * Created by yume on 16-4-21.
+ */
+public class BlankFragment12 extends BaseManagerFragment {
+
+
+    public BlankFragment12() {
+        // Required empty public constructor
+    }
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        setResult(2, new Bundle());
+        return inflater.inflate(R.layout.fragment_blank_fragment12, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        view.findViewById(R.id.finish_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+    }
+
+    @Override
+    protected void onShow() {
+        super.onShow();
+        System.out.println(this.getClass().getSimpleName() + ": onShow");
+    }
+
+    @Override
+    protected void onHide() {
+        super.onHide();
+        System.out.println(this.getClass().getSimpleName() + ": onHide");
+    }
+}

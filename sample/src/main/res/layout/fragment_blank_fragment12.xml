@@ -1,0 +1,18 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.fenrir.app.sample.BlankFragment12">
+
+    <!-- TODO: Update blank fragment layout -->
+    <TextView android:layout_width="match_parent" android:layout_height="match_parent"
+        android:text="Hello blank fragment12Hello blank fragment12Hello bl
+        ank fragment12Hello blank fragment12Hello blank fragment12Hello blank fragment12Hello blank fragment12Hello blank fragment12Hello blank fragment12Hello blank fragment12Hello blank
+        fragment12Hello blank fragment12Hello blank fragment12Hello blank fragment12" />
+
+    <Button
+        android:id="@+id/finish_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Finish"
+        android:layout_centerInParent="true"/>
+</FrameLayout>

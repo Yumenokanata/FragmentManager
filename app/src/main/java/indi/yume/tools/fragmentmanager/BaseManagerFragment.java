@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.View;
@@ -24,7 +25,12 @@ public abstract class BaseManagerFragment extends Fragment {
     private static final Random random = new Random();
 
     private static final String INTENT_KEY_REQUEST_CODE = "requestCode";
-    private static final String SAVE_STORE_HASH_CODE = "hash_code";
+
+    private static final String SAVE_STORE_HASH_CODE = "manager_hash_code";
+    private static final String SAVE_STORE_REQUEST_CODE = "manager_request_code";
+    private static final String SAVE_STORE_RESULT_CODE = "manager_result_code";
+    private static final String SAVE_STORE_RESULT_DATA = "manager_result_data";
+    private static final String SAVE_STORE_FROM_INTENT = "manager_from_intent";
 
     public static final String INTENT_KEY_STACK_TAG = "stackTag";
 
@@ -46,6 +52,19 @@ public abstract class BaseManagerFragment extends Fragment {
         super();
         stackTag = setDefaultStackTag();
         hashTag = String.valueOf(hashCode());
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        if(savedInstanceState != null) {
+            hashTag = savedInstanceState.getString(SAVE_STORE_HASH_CODE, hashTag);
+            requestCode = savedInstanceState.getInt(SAVE_STORE_REQUEST_CODE, requestCode);
+            resultCode = savedInstanceState.getInt(SAVE_STORE_RESULT_CODE, resultCode);
+            resultData = savedInstanceState.getBundle(SAVE_STORE_RESULT_DATA);
+            fromIntent = savedInstanceState.getParcelable(SAVE_STORE_FROM_INTENT);
+        }
     }
 
     protected String setDefaultStackTag(){
@@ -210,13 +229,10 @@ public abstract class BaseManagerFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString(SAVE_STORE_HASH_CODE, hashTag);
-    }
-
-    @Override
-    public void onViewStateRestored(Bundle savedInstanceState) {
-        super.onViewStateRestored(savedInstanceState);
-        if(savedInstanceState != null)
-            hashTag = savedInstanceState.getString(SAVE_STORE_HASH_CODE, hashTag);
+        outState.putInt(SAVE_STORE_REQUEST_CODE, requestCode);
+        outState.putInt(SAVE_STORE_RESULT_CODE, resultCode);
+        outState.putBundle(SAVE_STORE_RESULT_DATA, resultData);
+        outState.putParcelable(SAVE_STORE_FROM_INTENT, fromIntent);
     }
 
     private BaseManagerFragment getFragmentByIntent(Intent intent){
@@ -251,12 +267,7 @@ public abstract class BaseManagerFragment extends Fragment {
 
     private void checkThread(){
         if(Looper.myLooper() != Looper.getMainLooper()) {
-            try {
-                throw new Throwable("Must run on main thread!");
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
-            throw new Error("Must run on main thread!");
+            throw new RuntimeException("Must run on main thread!");
         }
     }
 
