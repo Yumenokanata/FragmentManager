@@ -212,7 +212,7 @@ public abstract class BaseManagerFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        onHide();
+//        onHide();
     }
 
     @Override

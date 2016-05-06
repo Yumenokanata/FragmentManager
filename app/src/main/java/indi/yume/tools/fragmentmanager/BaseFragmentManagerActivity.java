@@ -161,6 +161,28 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         outState.putStringArrayList(SAVE_STATE_KEY_TAG_LIST_TAG, tagList);
     }
 
+    @Override
+    protected void onResumeFragments() {
+        super.onResumeFragments();
+
+        if(currentStackTag != null && fragmentMap != null) {
+            List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
+            if(list != null && !list.isEmpty())
+                list.get(0).onShow();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if(currentStackTag != null && fragmentMap != null) {
+            List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
+            if(list != null && !list.isEmpty())
+                list.get(0).onHide();
+        }
+    }
+
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
         try {
             startActivity(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent));
@@ -316,7 +338,8 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
         for(BaseManagerFragment fragment : list)
             if(!fragment.isHidden()) {
                 fragmentTransaction.hide(fragment);
-                fragment.onHide();
+                //在每个调用本方法的位置之后都会调用showStackByTagNoAnim();而在此方法中会统一调用onHide方法。
+//                fragment.onHide();
             }
     }
 
@@ -414,7 +437,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             final BaseManagerFragment fragment = list.get(list.size() - 1);
             list.remove(fragment);
 
-            BaseManagerFragment fragment1 = list.get(list.size() - 1);
+            final BaseManagerFragment fragment1 = list.get(list.size() - 1);
             fragment.preBackResultData();
             if(fragment.getRequestCode() != -1)
                 fragment1.onFragmentResult(fragment.getRequestCode(),
@@ -439,6 +462,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                                 fragmentManager.beginTransaction()
                                         .remove(fragment)
                                         .commit();
+                                fragment1.onShow();
                             }
                         });
             }
@@ -446,7 +470,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     }
 
     private void addFragmentWithAnim(String tag,
-                                     BaseManagerFragment nextFragment) {
+                                     final BaseManagerFragment nextFragment) {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
@@ -464,6 +488,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                                             .hide(backFragment)
                                             .commit();
                                     backFragment.onHide();
+                                    nextFragment.onShow();
                                 }
                             });
                 }

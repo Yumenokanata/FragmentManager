@@ -21,9 +21,32 @@ public class BlankFragment22 extends BaseManagerFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        System.out.println(this.getClass().getSimpleName() + ": onCreateView");
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_blank_fragment22, container, false);
     }
 
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        System.out.println(this.getClass().getSimpleName() + ": onViewCreated");
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        System.out.println(this.getClass().getSimpleName() + ": onResume");
+    }
+
+    @Override
+    protected void onShow() {
+        super.onShow();
+        System.out.println(this.getClass().getSimpleName() + ": onShow");
+    }
+
+    @Override
+    protected void onHide() {
+        super.onHide();
+        System.out.println(this.getClass().getSimpleName() + ": onHide");
+    }
 }

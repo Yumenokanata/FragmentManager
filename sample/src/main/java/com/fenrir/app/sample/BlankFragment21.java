@@ -22,6 +22,7 @@ public class BlankFragment21 extends BaseManagerFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        System.out.println(this.getClass().getSimpleName() + ": onCreateView");
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_blank_fragment21, container, false);
     }
@@ -29,6 +30,7 @@ public class BlankFragment21 extends BaseManagerFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        System.out.println(this.getClass().getSimpleName() + ": onViewCreated");
         view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -37,5 +39,23 @@ public class BlankFragment21 extends BaseManagerFragment {
                         SingleTagActivity.class);
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        System.out.println(this.getClass().getSimpleName() + ": onResume");
+    }
+
+    @Override
+    protected void onShow() {
+        super.onShow();
+        System.out.println(this.getClass().getSimpleName() + ": onShow");
+    }
+
+    @Override
+    protected void onHide() {
+        super.onHide();
+        System.out.println(this.getClass().getSimpleName() + ": onHide");
     }
 }
