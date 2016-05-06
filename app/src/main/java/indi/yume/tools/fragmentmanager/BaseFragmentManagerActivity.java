@@ -314,8 +314,10 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
     private void hideStackByTag(String tag, FragmentTransaction fragmentTransaction){
         List<BaseManagerFragment> list = fragmentMap.get(tag);
         for(BaseManagerFragment fragment : list)
-            if(!fragment.isHidden())
+            if(!fragment.isHidden()) {
                 fragmentTransaction.hide(fragment);
+                fragment.onHide();
+            }
     }
 
     private void showStackByTagNoAnim(String tag, FragmentTransaction fragmentTransaction){
@@ -335,9 +337,12 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
             BaseManagerFragment willShowFragment = list.get(list.size() - 1);
             for(Map.Entry<String, List<BaseManagerFragment>> entry : fragmentMap.entrySet())
                 for(BaseManagerFragment f : entry.getValue())
-                    if(willShowFragment != f && !f.isHidden())
+                    if(willShowFragment != f && !f.isHidden()) {
                         fragmentTransaction.hide(f);
+                        f.onHide();
+                    }
             fragmentTransaction.show(willShowFragment);
+            willShowFragment.onShow();
         }
 
 //        for(BaseManagerFragment fragment : list)
@@ -458,6 +463,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                                     fragmentManager.beginTransaction()
                                             .hide(backFragment)
                                             .commit();
+                                    backFragment.onHide();
                                 }
                             });
                 }

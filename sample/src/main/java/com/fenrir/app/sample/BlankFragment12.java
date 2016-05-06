@@ -21,6 +21,7 @@ public class BlankFragment12 extends BaseManagerFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        System.out.println(this.getClass().getSimpleName() + ": onCreateView");
         // Inflate the layout for this fragment
         setResult(2, new Bundle());
         return inflater.inflate(R.layout.fragment_blank_fragment12, container, false);
@@ -28,6 +29,7 @@ public class BlankFragment12 extends BaseManagerFragment {
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
+        System.out.println(this.getClass().getSimpleName() + ": onViewCreated");
         super.onViewCreated(view, savedInstanceState);
         view.findViewById(R.id.finish_button).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -35,6 +37,12 @@ public class BlankFragment12 extends BaseManagerFragment {
                 finish();
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        System.out.println(this.getClass().getSimpleName() + ": onResume");
     }
 
     @Override

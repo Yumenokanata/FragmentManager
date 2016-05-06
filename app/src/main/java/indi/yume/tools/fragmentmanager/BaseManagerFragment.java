@@ -218,11 +218,11 @@ public abstract class BaseManagerFragment extends Fragment {
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
-        if(hidden){
-            onHide();
-        } else{
-            onShow();
-        }
+//        if(hidden) {
+//            onHide();
+//        } else{
+//            onShow();
+//        }
     }
 
     @Override
