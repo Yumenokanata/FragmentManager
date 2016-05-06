@@ -6,8 +6,8 @@ Fragment切换方法的封装
 2. 简化Fragment的管理  
 3. 完全模仿Activity的接口方法和回调（如startFragment()、finish()等）  
 4. 通过Intent启动，通过onFragmentResult()方法回调  
-5. ___NEW___ 使用Rx的方式启动Fragment: startFragmentForObservable(Intent intent)  
-6. ___NEW___ 自定义Fragment切换动画
+5. 使用Rx的方式启动Fragment: startFragmentForObservable(Intent intent)  
+6. 自定义Fragment切换动画
 
 ## 添加到Android studio
 Step1: 在根build.gradle中添加仓库：
@@ -23,7 +23,7 @@ allprojects {
 Step2: 在工程中添加依赖：
 ```groovy
 dependencies {
-    compile 'com.github.Yumenokanata:FragmentManager:2.1.0b'
+    compile 'com.github.Yumenokanata:FragmentManager:x.y.z'
 }
 ```
 
@@ -71,6 +71,11 @@ switchToStackByTag(String tag)  //切换栈
 ```java
 BaseFragmentManagerActivity.setFragmentAnim(int enterAnim, int exitAnim)
 ```
+
+7、新增两个生命周期方法：onShow()和onHide()  
+onShow方法只会在Fragment由隐藏状态转换为显示状态时被调用，并且是在界面切换动画完成后调用（这意味着onShow可能在onCreateView方法调用完成后一段时间后才会调用）;  
+onHide方法只会在Fragment由显示状态切换为隐藏状态时调用，这意味着Fragment被销毁时不会回调此方法。  
+对于startFragmentOnNewActivity()这两个生命周期方法同样有效。
 
 ###License
 <pre>
