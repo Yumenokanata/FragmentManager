@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.Tuple2;
+import rx.functions.Action1;
 
 /**
  * Created by yume on 16-4-21.
@@ -35,7 +37,12 @@ public class BlankFragment11 extends BaseManagerFragment {
             @Override
             public void onClick(View v) {
                 startFragmentForObservable(new Intent(getContext(), BlankFragment12.class))
-                        .subscribe();
+                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
+                                System.out.println("onResult: " + integerBundleTuple2.toString());
+                            }
+                        });
             }
         });
     }

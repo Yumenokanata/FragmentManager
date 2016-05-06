@@ -26,4 +26,9 @@ public class Tuple2<T1, T2> {
     public T2 getData2() {
         return data2;
     }
+
+    @Override
+    public String toString() {
+        return "Tuple2[data1=" + String.valueOf(data1) + ", data2=" + String.valueOf(data2) + "]";
+    }
 }

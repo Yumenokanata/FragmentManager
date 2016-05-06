@@ -9,6 +9,8 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.View;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import rx.Observable;
@@ -22,6 +24,8 @@ import rx.subjects.Subject;
  * Created by yume on 15/9/24.
  */
 public abstract class BaseManagerFragment extends Fragment {
+    private static final Map<String, Object> savedInstanceStateMap = new HashMap<>();
+
     private static final Random random = new Random();
 
     private static final String INTENT_KEY_REQUEST_CODE = "requestCode";
@@ -45,8 +49,7 @@ public abstract class BaseManagerFragment extends Fragment {
     private int resultCode = -1;
     private Bundle resultData = null;
 
-    private Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>> onResultSubject
-            = new SerializedSubject<>(PublishSubject.<Tuple3<Integer, Integer, Bundle>>create());
+    private Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>> onResultSubject;
 
     public BaseManagerFragment() {
         super();
@@ -64,7 +67,15 @@ public abstract class BaseManagerFragment extends Fragment {
             resultCode = savedInstanceState.getInt(SAVE_STORE_RESULT_CODE, resultCode);
             resultData = savedInstanceState.getBundle(SAVE_STORE_RESULT_DATA);
             fromIntent = savedInstanceState.getParcelable(SAVE_STORE_FROM_INTENT);
+
+            Object subject = savedInstanceStateMap.remove(hashTag);
+            if(subject != null) {
+                onResultSubject = (Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>>) subject;
+            }
         }
+
+        if(onResultSubject == null)
+            onResultSubject = new SerializedSubject<>(PublishSubject.<Tuple3<Integer, Integer, Bundle>>create());
     }
 
     protected String setDefaultStackTag(){
@@ -233,6 +244,7 @@ public abstract class BaseManagerFragment extends Fragment {
         outState.putInt(SAVE_STORE_RESULT_CODE, resultCode);
         outState.putBundle(SAVE_STORE_RESULT_DATA, resultData);
         outState.putParcelable(SAVE_STORE_FROM_INTENT, fromIntent);
+        savedInstanceStateMap.put(hashTag, onResultSubject);
     }
 
     private BaseManagerFragment getFragmentByIntent(Intent intent){
