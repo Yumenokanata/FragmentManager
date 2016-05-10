@@ -3,6 +3,7 @@ package indi.yume.tools.fragmentmanager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.AnimRes;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
@@ -60,6 +61,19 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
 
     protected String getCurrentStackTag() {
         return currentStackTag;
+    }
+
+    @Nullable
+    public BaseManagerFragment getCurrentFragment() {
+        String currentTag = getCurrentStackTag();
+        if(currentTag == null)
+            return null;
+
+        List<BaseManagerFragment> list = fragmentMap.get(currentTag);
+        if(list == null || list.isEmpty())
+            return null;
+
+        return list.get(list.size() - 1);
     }
 
     public void setFragmentAnim(@AnimRes int enterAnim,
