@@ -9,6 +9,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.animation.Animation;
@@ -26,7 +27,7 @@ import rx.functions.Action0;
 /**
  * Created by yume on 15/9/24.
  */
-public abstract class BaseFragmentManagerActivity extends FragmentActivity {
+public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     private static final String SAVE_STATE_KEY_CURRENT_STACK_TAG = "current_stack_tag";
     private static final String SAVE_STATE_KEY_TAG_LIST_TAG = "tag_list_key";
 
