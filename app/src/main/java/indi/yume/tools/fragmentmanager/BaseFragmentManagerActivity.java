@@ -433,7 +433,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                             public void call() {
                                 fragmentManager.beginTransaction()
                                         .remove(fragment)
-                                        .commit();
+                                        .commitAllowingStateLoss();
                             }
                         });
             }
@@ -457,7 +457,7 @@ public abstract class BaseFragmentManagerActivity extends FragmentActivity {
                                 public void call() {
                                     fragmentManager.beginTransaction()
                                             .hide(backFragment)
-                                            .commit();
+                                            .commitAllowingStateLoss();
                                 }
                             });
                 }
