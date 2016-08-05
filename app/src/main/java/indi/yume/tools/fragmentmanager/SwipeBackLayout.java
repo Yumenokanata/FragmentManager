@@ -49,7 +49,9 @@ public class SwipeBackLayout extends FrameLayout {
     }
 
     ViewDragHelper provideDragHelper() {
-        return ViewDragHelper.create(this, new ViewDragCallBack());
+        ViewDragHelper helper = ViewDragHelper.create(this, new ViewDragCallBack());
+        helper.setEdgeTrackingEnabled(EDGE_LEFT);
+        return helper;
     }
 
     public void attachToActivity(BaseFragmentManagerActivity activity) {
