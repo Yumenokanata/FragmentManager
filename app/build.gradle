@@ -1,4 +1,18 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
+        classpath 'me.tatarka:gradle-retrolambda:3.2.4'
+    }
+}
+
 apply plugin: 'com.android.library'
+apply plugin: 'android-apt'
+apply plugin: 'me.tatarka.retrolambda'
 
 android {
     compileSdkVersion 23
@@ -16,6 +30,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
 }
 
 dependencies {
@@ -24,4 +42,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.1.1'
 
     compile 'io.reactivex:rxjava:1.1.1'
+
+    apt "org.projectlombok:lombok:1.16.10"
+    provided "org.projectlombok:lombok:1.16.10"
 }

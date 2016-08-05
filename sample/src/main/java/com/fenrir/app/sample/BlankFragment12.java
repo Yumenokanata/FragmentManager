@@ -1,11 +1,15 @@
 package com.fenrir.app.sample;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.SwipeBackLayout;
+
+import static indi.yume.tools.fragmentmanager.SwipeBackUtil.enableSwipeBackAtFragment;
 
 /**
  * Created by yume on 16-4-21.
@@ -24,7 +28,9 @@ public class BlankFragment12 extends BaseManagerFragment {
         System.out.println(this.getClass().getSimpleName() + ": onCreateView");
         // Inflate the layout for this fragment
         setResult(2, new Bundle());
-        return inflater.inflate(R.layout.fragment_blank_fragment12, container, false);
+        View view = inflater.inflate(R.layout.fragment_blank_fragment12, container, false);
+
+        return enableSwipeBackAtFragment(this, view);
     }
 
     @Override

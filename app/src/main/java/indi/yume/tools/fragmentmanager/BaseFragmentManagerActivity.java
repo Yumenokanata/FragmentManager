@@ -77,6 +77,34 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         return list.get(list.size() - 1);
     }
 
+    BaseManagerFragment getPreFragment() {
+        List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
+        if(list == null || list.size() <= 1)
+            return null;
+
+        return list.get(list.size() - 2);
+    }
+
+    void showPreFragment() {
+        BaseManagerFragment fragment = getPreFragment();
+        if(fragment == null)
+            return;
+
+        fragmentManager.beginTransaction()
+                .show(fragment)
+                .commitAllowingStateLoss();
+    }
+
+    void hidePreFragment() {
+        BaseManagerFragment fragment = getPreFragment();
+        if(fragment == null)
+            return;
+
+        fragmentManager.beginTransaction()
+                .hide(fragment)
+                .commitAllowingStateLoss();
+    }
+
     public void setFragmentAnim(@AnimRes int enterAnim,
                                 @AnimRes int exitAnim) {
         this.fragmentEnterAnim = enterAnim;
@@ -420,6 +448,38 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                     }
                     break;
                 }
+    }
+
+    public void removeFragmentWithoutAnim(String tag) {
+        List<BaseManagerFragment> list = fragmentMap.get(tag);
+        if(list.size() <= 1) {
+            if(list.size() == 1) {
+                BaseManagerFragment fragment = list.get(0);
+                fragment.preBackResultData();
+                Intent intent = new Intent();
+                if(fragment.getResultData() != null)
+                    intent.putExtras(fragment.getResultData());
+                setResult(fragment.getRequestCode(), intent);
+            }
+            supportFinishAfterTransition();
+        } else {
+            final BaseManagerFragment fragment = list.get(list.size() - 1);
+            list.remove(fragment);
+
+            final BaseManagerFragment fragment1 = list.get(list.size() - 1);
+            fragment.preBackResultData();
+            if(fragment.getRequestCode() != -1)
+                fragment1.onFragmentResult(fragment.getRequestCode(),
+                        fragment.getResultCode(),
+                        fragment.getResultData());
+
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//            showStackByTagNoAnim(currentStackTag, fragmentTransaction1);
+            fragmentTransaction.show(fragment1);
+
+            fragmentTransaction.remove(fragment)
+                    .commit();
+        }
     }
 
     @Override
