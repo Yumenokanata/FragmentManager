@@ -1,12 +1,16 @@
 package com.fenrir.app.sample;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.Tuple2;
+import rx.functions.Action1;
 
 /**
  * Created by yume on 16-4-21.
@@ -31,14 +35,49 @@ public class BlankFragment21 extends BaseManagerFragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         System.out.println(this.getClass().getSimpleName() + ": onViewCreated");
+
+        final Context context = getContext();
         view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 //                startFragment(new Intent(getContext(), BlankFragment22.class));
-                startFragmentOnNewActivity(new Intent(getContext(), BlankFragment22.class),
-                        SingleTagActivity.class);
+                startFragmentOnNewActivityForObservable(
+                        new Intent(getContext(), BlankFragment22.class),
+                        SingleTagActivity.class)
+                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                                       @Override
+                                       public void call(Tuple2<Integer, Bundle> event) {
+                                           Toast.makeText(context, event.getData2().getString("result"), Toast.LENGTH_LONG).show();
+                                       }
+                                   },
+                                new Action1<Throwable>() {
+                                    @Override
+                                    public void call(Throwable throwable) {
+                                        throwable.printStackTrace();
+                                    }
+                                });
             }
         });
+        view.findViewById(R.id.jump_activity_button)
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        startActivityForObservable(
+                                new Intent(getContext(), ForObserableActivity.class))
+                                .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                                               @Override
+                                               public void call(Tuple2<Integer, Bundle> event) {
+                                                   Toast.makeText(context, event.getData2().getString("result"), Toast.LENGTH_LONG).show();
+                                               }
+                                           },
+                                        new Action1<Throwable>() {
+                                            @Override
+                                            public void call(Throwable throwable) {
+                                                throwable.printStackTrace();
+                                            }
+                                        });
+                    }
+                });
     }
 
     @Override

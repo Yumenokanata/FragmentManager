@@ -14,4 +14,12 @@
         android:text="Jump 22"
         android:layout_centerInParent="true"/>
 
+    <Button
+        android:id="@+id/jump_activity_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Jump new Activity"
+        android:layout_below="@id/jump_button"
+        android:layout_centerHorizontal="true"/>
+
 </RelativeLayout>

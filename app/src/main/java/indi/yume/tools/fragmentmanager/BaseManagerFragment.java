@@ -128,6 +128,14 @@ public abstract class BaseManagerFragment extends Fragment {
         this.onCreatedViewListener = onCreatedViewListener;
     }
 
+    public BaseFragmentManagerActivity getManagerActivity() {
+        return (BaseFragmentManagerActivity) getActivity();
+    }
+
+    public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
+        return getManagerActivity().startActivityForObservable(intent);
+    }
+
     //Override to handle event when {@link #startFragmentForResult(Intent, int)}
     public void onFragmentResult(int requestCode, int resultCode, Bundle data){
         onResultSubject.onNext(Tuple3.of(requestCode, resultCode, data));
@@ -139,11 +147,11 @@ public abstract class BaseManagerFragment extends Fragment {
                 activityClazz);
     }
 
-    protected void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int resultCode){
+    protected void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
         ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivityForResult(
                 intent,
                 activityClazz,
-                resultCode);
+                requestCode);
     }
 
     public void startFragment(Intent intent){
@@ -183,6 +191,32 @@ public abstract class BaseManagerFragment extends Fragment {
             public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
                 final int requestCode = random.nextInt();
                 startFragmentForResult(intent, requestCode);
+                onResultSubject.subscribe(
+                        new Action1<Tuple3<Integer, Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple3<Integer, Integer, Bundle> tuple) {
+                                if (requestCode == tuple.getData1())
+                                    sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                sub.onCompleted();
+                            }
+                        },
+                        new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                sub.onError(throwable);
+                            }
+                        });
+            }
+        });
+    }
+
+    protected Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(Intent intent,
+                                                                                          Class<? extends SingleBaseActivity> activityClazz){
+        return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
+            @Override
+            public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
+                final int requestCode = random.nextInt() & 0x0000ffff;
+                startFragmentOnNewActivityForResult(intent, activityClazz, requestCode);
                 onResultSubject.subscribe(
                         new Action1<Tuple3<Integer, Integer, Bundle>>() {
                             @Override

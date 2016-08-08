@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Map;
 
 import indi.yume.tools.renderercalendar.R;
+import rx.Observable;
 import rx.functions.Action0;
 
 /**
  * Created by yume on 15/9/24.
  */
 public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
+    private static final String SAVE_STATE_KEY_IS_START_FOR_RESULT = "is_start_for_result";
     private static final String SAVE_STATE_KEY_CURRENT_STACK_TAG = "current_stack_tag";
     private static final String SAVE_STATE_KEY_TAG_LIST_TAG = "tag_list_key";
 
@@ -36,6 +38,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     private String currentStackTag;
     private FragmentManager fragmentManager;
     private OnStackChangedListener mOnStackChangedListener;
+
+    private String forObservableTag;
 
     private boolean isStartForResult = false;
 
@@ -143,12 +147,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        forObservableTag = ActivityForObservableHelper.onCreate(savedInstanceState, this);
         fragmentManager = getSupportFragmentManager();
         baseFragmentMap = BaseFragmentWithTag();
         if(baseFragmentMap == null)
             throw new Error("BaseFragmentWithTag() must return value");
 
         if(savedInstanceState != null) {
+            isStartForResult = savedInstanceState.getBoolean(SAVE_STATE_KEY_IS_START_FOR_RESULT, false);
             restoreManageData(savedInstanceState);
             String stackTag = savedInstanceState.getString(SAVE_STATE_KEY_CURRENT_STACK_TAG);
             if (!TextUtils.isEmpty(stackTag)) {
@@ -187,6 +193,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        ActivityForObservableHelper.onSaveInstanceState(forObservableTag, outState);
+        outState.putBoolean(SAVE_STATE_KEY_IS_START_FOR_RESULT, isStartForResult);
 
         outState.putString(SAVE_STATE_KEY_CURRENT_STACK_TAG, currentStackTag);
 
@@ -202,6 +210,12 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             }
         }
         outState.putStringArrayList(SAVE_STATE_KEY_TAG_LIST_TAG, tagList);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ActivityForObservableHelper.onDestroy(forObservableTag);
     }
 
     @Override
@@ -235,9 +249,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         }
     }
 
-    public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int resultCode){
+    public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
         try {
-            startActivityForResult(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent), resultCode);
+            startActivityForResult(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent), requestCode);
             overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
             isStartForResult = true;
         } catch (ClassNotFoundException e) {
@@ -245,13 +259,19 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         }
     }
 
+    public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
+        return ActivityForObservableHelper.startActivityForObservable(forObservableTag, this, intent);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        ActivityForObservableHelper.onActivityResult(forObservableTag, requestCode, resultCode, data != null ? data.getExtras() : null);
+
         if(isStartForResult)
             if(!TextUtils.isEmpty(currentStackTag) && fragmentMap != null && fragmentMap.keySet().contains(currentStackTag)){
                 List<BaseManagerFragment> fragmentList = fragmentMap.get(currentStackTag);
-                if(fragmentList != null && fragmentList.size() != 0)
+                if(fragmentList != null && !fragmentList.isEmpty())
                     fragmentList.get(fragmentList.size() - 1).onFragmentResult(requestCode,
                             resultCode,
                             data != null ? data.getExtras() : null);
