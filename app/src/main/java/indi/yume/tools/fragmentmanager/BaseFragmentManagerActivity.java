@@ -225,7 +225,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(currentStackTag != null && fragmentMap != null) {
             List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
             if(list != null && !list.isEmpty())
-                list.get(0).onShow();
+                list.get(list.size() - 1).onShow();
         }
     }
 
