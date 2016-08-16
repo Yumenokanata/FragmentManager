@@ -516,15 +516,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if(onBackPressed(getCurrentStackSize()))
-            return;
-
         List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
         if(!list.isEmpty()) {
             BaseManagerFragment fragment = list.get(list.size() - 1);
             if(fragment.onBackPressed())
                 return;
         }
+        if(onBackPressed(getCurrentStackSize()))
+            return;
 
         removeFragmentWithAnim(currentStackTag);
     }
