@@ -68,6 +68,18 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         return currentStackTag;
     }
 
+    public int getCurrentStackSize() {
+        String currentTag = getCurrentStackTag();
+        if(currentTag == null)
+            return 0;
+
+        List<BaseManagerFragment> list = fragmentMap.get(currentTag);
+        if(list == null || list.isEmpty())
+            return 0;
+
+        return list.size();
+    }
+
     @Nullable
     public BaseManagerFragment getCurrentFragment() {
         String currentTag = getCurrentStackTag();
@@ -504,14 +516,21 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        if(onBackPressed(getCurrentStackSize()))
+            return;
+
         List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
-        if(list.size() > 0) {
+        if(!list.isEmpty()) {
             BaseManagerFragment fragment = list.get(list.size() - 1);
             if(fragment.onBackPressed())
                 return;
         }
 
         removeFragmentWithAnim(currentStackTag);
+    }
+
+    public boolean onBackPressed(int currentStackSize) {
+        return false;
     }
 
     private void removeFragmentWithAnim(String tag) {
