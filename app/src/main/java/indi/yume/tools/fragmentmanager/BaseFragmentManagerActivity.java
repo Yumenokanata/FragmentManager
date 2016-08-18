@@ -491,7 +491,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 Intent intent = new Intent();
                 if(fragment.getResultData() != null)
                     intent.putExtras(fragment.getResultData());
-                setResult(fragment.getRequestCode(), intent);
+                setResult(fragment.getResultCode(), intent);
             }
             supportFinishAfterTransition();
         } else {
@@ -541,7 +541,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 Intent intent = new Intent();
                 if(fragment.getResultData() != null)
                     intent.putExtras(fragment.getResultData());
-                setResult(fragment.getRequestCode(), intent);
+                setResult(fragment.getResultCode(), intent);
             }
             supportFinishAfterTransition();
             if(isShowAnimWhenFinish)

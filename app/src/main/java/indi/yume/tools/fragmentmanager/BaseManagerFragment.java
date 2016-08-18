@@ -108,7 +108,7 @@ public abstract class BaseManagerFragment extends Fragment {
         this.resultData = resultDate;
     }
 
-    public int getRequestCode() {
+    int getRequestCode() {
         return requestCode;
     }
 
