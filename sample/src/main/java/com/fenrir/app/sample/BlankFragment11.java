@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.OnShowMode;
 import indi.yume.tools.fragmentmanager.Tuple2;
 import rx.functions.Action1;
 
@@ -54,9 +55,9 @@ public class BlankFragment11 extends BaseManagerFragment {
     }
 
     @Override
-    protected void onShow() {
-        super.onShow();
-        System.out.println(this.getClass().getSimpleName() + ": onShow");
+    protected void onShow(int callMode) {
+        super.onShow(callMode);
+        System.out.println(this.getClass().getSimpleName() + ": onShow " + OnShowMode.Util.toString(callMode));
     }
 
     @Override

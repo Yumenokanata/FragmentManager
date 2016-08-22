@@ -174,8 +174,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 for(String tag : fragmentMap.keySet())
                     if(!TextUtils.equals(tag, stackTag))
                         hideStackByTag(tag, transaction);
-                showStackByTagNoAnim(stackTag, transaction);
+                BaseManagerFragment fragment = showStackByTagNoAnim(stackTag, transaction);
                 transaction.commit();
+                if(fragment != null)
+                    fragment.onShow(OnShowMode.ON_CREATE);
                 currentStackTag = stackTag;
             }
         }
@@ -237,7 +239,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(currentStackTag != null && fragmentMap != null) {
             List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
             if(list != null && !list.isEmpty())
-                list.get(list.size() - 1).onShow();
+                list.get(list.size() - 1).onShow(OnShowMode.ON_RESUME);
         }
     }
 
@@ -358,9 +360,16 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 else
                     hideStackByTag(currentStackTag, fragmentTransaction);
 
-            showStackByTagNoAnim(tag, fragmentTransaction);
+            BaseManagerFragment fragment = showStackByTagNoAnim(tag, fragmentTransaction);
             currentStackTag = tag;
             fragmentTransaction.commit();
+            if(fragment != null) {
+                fragment.onShow(OnShowMode.ON_CREATE);
+            } else {
+                BaseManagerFragment currentFragment = getCurrentFragment();
+                if(currentFragment != null)
+                    currentFragment.onShow(OnShowMode.ON_SWITCH);
+            }
         }
     }
 
@@ -370,8 +379,15 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
             clearStackByTag(currentStackTag, fragmentTransaction);
 
-        showStackByTagNoAnim(currentStackTag, fragmentTransaction);
+        BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
         fragmentTransaction.commit();
+        if(fragment != null) {
+            fragment.onShow(OnShowMode.ON_CREATE);
+        } else {
+            BaseManagerFragment currentFragment = getCurrentFragment();
+            if(currentFragment != null)
+                currentFragment.onShow(OnShowMode.ON_SWITCH);
+        }
     }
 
     public void addToStack(BaseManagerFragment fragment){
@@ -418,7 +434,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             }
     }
 
-    private void showStackByTagNoAnim(String tag, FragmentTransaction fragmentTransaction){
+    /**
+     *
+     * @param tag
+     * @param fragmentTransaction
+     *
+     * @return is create new.
+     */
+    private BaseManagerFragment showStackByTagNoAnim(String tag, FragmentTransaction fragmentTransaction){
         if(!fragmentMap.containsKey(tag))
             fragmentMap.put(tag, new LinkedList<BaseManagerFragment>());
 
@@ -430,7 +453,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragment.setIntent(getIntent());
             fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());
             list.add(fragment);
-            return;
+            return fragment;
         } else{
             BaseManagerFragment willShowFragment = list.get(list.size() - 1);
             for(Map.Entry<String, List<BaseManagerFragment>> entry : fragmentMap.entrySet())
@@ -440,7 +463,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                         f.onHide();
                     }
             fragmentTransaction.show(willShowFragment);
-            willShowFragment.onShow();
+            return null;
         }
 
 //        for(BaseManagerFragment fragment : list)
@@ -511,6 +534,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
             fragmentTransaction.remove(fragment)
                     .commit();
+            fragment1.onShow(OnShowMode.ON_BACK);
         }
     }
 
@@ -575,7 +599,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                                 fragmentManager.beginTransaction()
                                         .remove(fragment)
                                         .commit();
-                                fragment1.onShow();
+                                fragment1.onShow(OnShowMode.ON_BACK);
                             }
                         });
             }
@@ -587,7 +611,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
-        if(list.size() > 0 && fragmentEnterAnim != 0) {
+        if(!list.isEmpty() && fragmentEnterAnim != 0) {
             final BaseManagerFragment backFragment = list.get(list.size() - 1);
             nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
                 @Override
@@ -601,7 +625,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                                             .hide(backFragment)
                                             .commit();
                                     backFragment.onHide();
-                                    nextFragment.onShow();
+                                    nextFragment.onShow(OnShowMode.ON_CREATE);
                                 }
                             });
                 }
@@ -613,6 +637,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
+            nextFragment.onShow(OnShowMode.ON_CREATE);
         }
         list.add(nextFragment);
     }

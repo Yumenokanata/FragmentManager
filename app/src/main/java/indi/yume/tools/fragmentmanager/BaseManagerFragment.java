@@ -246,7 +246,17 @@ public abstract class BaseManagerFragment extends Fragment {
 
     protected void onHide(){ }
 
-    protected void onShow(){ }
+    /**
+     * start new fragment -> OnShowMode: onCreate
+     * switch to a tag -> no fragment -> create new fragment -> OnShowMode: onCreate
+     * switch to a tag -> has fragment -> OnShowMode: onSwitch
+     * start new fragment -> back -> OnShowMode: onBack
+     * start new fragment at new activity -> OnShowMode: onCreate and onResume
+     * back from activity -> OnShowMode: onResume
+     *
+     * @param callMode: onCreate, onResume, onBack and onSwitch
+     */
+    protected void onShow(@OnShowMode int callMode){ }
 
     protected void preBackResultData(){ }
 
