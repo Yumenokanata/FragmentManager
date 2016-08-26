@@ -141,13 +141,13 @@ public abstract class BaseManagerFragment extends Fragment {
         onResultSubject.onNext(Tuple3.of(requestCode, resultCode, data));
     }
 
-    protected void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
+    public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
         ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivity(
                 intent,
                 activityClazz);
     }
 
-    protected void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
+    public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
         ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivityForResult(
                 intent,
                 activityClazz,
@@ -210,7 +210,7 @@ public abstract class BaseManagerFragment extends Fragment {
         });
     }
 
-    protected Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(Intent intent,
+    public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(Intent intent,
                                                                                           Class<? extends SingleBaseActivity> activityClazz){
         return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
             @Override
