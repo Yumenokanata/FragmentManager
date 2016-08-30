@@ -154,11 +154,28 @@ public abstract class BaseManagerFragment extends Fragment {
                 requestCode);
     }
 
+    private void startFragmentOnNewActivityForResult(Intent intent,
+                                                     Class<? extends SingleBaseActivity> activityClazz,
+                                                     int requestCode,
+                                                     boolean checkThrottle){
+        if(checkThrottle && !ThrottleUtil.checkEvent())
+            return;
+
+        ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivityForResult(
+                intent,
+                activityClazz,
+                requestCode,
+                false);
+    }
+
     public void startFragment(Intent intent){
         this.startFragment(intent, false);
     }
 
     public void startFragment(Intent intent, boolean clearCurrentStack){
+        if(!ThrottleUtil.checkEvent())
+            return;
+
         checkThread();
 
         BaseManagerFragment fragment = getFragmentByIntent(intent);
@@ -174,6 +191,16 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public void startFragmentForResult(Intent intent, int requestCode, boolean clearCurrentStack){
+        this.startFragmentForResult(intent, requestCode, false, true);
+    }
+
+    private void startFragmentForResult(Intent intent,
+                                        int requestCode,
+                                        boolean clearCurrentStack,
+                                        boolean checkThrottle){
+        if(checkThrottle && !ThrottleUtil.checkEvent())
+            return;
+
         checkThread();
 
         BaseManagerFragment fragment = getFragmentByIntent(intent);
@@ -186,11 +213,14 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
+        if(!ThrottleUtil.checkEvent())
+            return Observable.error(new ThrottleException());
+
         return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
             @Override
             public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
                 final int requestCode = random.nextInt();
-                startFragmentForResult(intent, requestCode);
+                startFragmentForResult(intent, requestCode, false, false);
                 onResultSubject.subscribe(
                         new Action1<Tuple3<Integer, Integer, Bundle>>() {
                             @Override
@@ -211,12 +241,15 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(Intent intent,
-                                                                                          Class<? extends SingleBaseActivity> activityClazz){
+                                                                                       Class<? extends SingleBaseActivity> activityClazz){
+        if(!ThrottleUtil.checkEvent())
+            return Observable.error(new ThrottleException());
+
         return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
             @Override
             public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
                 final int requestCode = random.nextInt() & 0x0000ffff;
-                startFragmentOnNewActivityForResult(intent, activityClazz, requestCode);
+                startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, false);
                 onResultSubject.subscribe(
                         new Action1<Tuple3<Integer, Integer, Bundle>>() {
                             @Override

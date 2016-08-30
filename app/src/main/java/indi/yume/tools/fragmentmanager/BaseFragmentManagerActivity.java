@@ -255,6 +255,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
+        if(!ThrottleUtil.checkEvent())
+            return;
+
         try {
             startActivity(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent));
             overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
@@ -264,6 +267,16 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
+        startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, true);
+    }
+
+    void startFragmentOnNewActivityForResult(Intent intent,
+                                             Class<? extends SingleBaseActivity> activityClazz,
+                                             int requestCode,
+                                             boolean checkThrottle){
+        if(checkThrottle && !ThrottleUtil.checkEvent())
+            return;
+
         try {
             startActivityForResult(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent), requestCode);
             overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
@@ -274,6 +287,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
+        if(!ThrottleUtil.checkEvent())
+            return Observable.error(new ThrottleException());
+
         return ActivityForObservableHelper.startActivityForObservable(forObservableTag, this, intent);
     }
 
@@ -298,6 +314,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void startFragment(Intent intent, boolean clearCurrentStack){
+        if(!ThrottleUtil.checkEvent())
+            return;
+
         BaseManagerFragment fragment = getFragmentByIntent(intent);
         if(fragment == null)
             return;
