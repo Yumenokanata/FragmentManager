@@ -81,6 +81,11 @@ onHide方法只会在Fragment由显示状态切换为隐藏状态时调用，这
 对于startFragmentOnNewActivity()这两个生命周期方法同样有效。
 > (2.4.0以下版本)onShow方法只会在Fragment由隐藏状态转换为显示状态时被调用，并且是在界面切换动画完成后调用（这意味着onShow可能在onCreateView方法调用完成后一段时间后才会调用）;  
 
+(Test) onHide()方法有了一个参数：@OnHideMode int hideMode, 有三种可能的值：  
+1. OnHideMode.**ON_PAUSE**: 1. 启动了一个新Activity(无论是原生方法还是本框架的方法) 2. 程序被切换到后台(当且仅当该Fragment所在Activity在最前时)  
+2. OnHideMode.**ON_START_NEW**: 当启动一个新的Fragment前(即onHide会在新Fragment的onShow方法之前调用)  
+3. OnHideMode.**ON_SWITCH**: 在切换到另一个Tag导致自己被隐藏时回调   
+
 (2.4.0及以上版本)onShow()方法有了一个参数：@OnShowMode int callMode, 有四种可能的值：  
 1. OnShowMode.**ON_CREATE**: 在Fragment创建时回调并传入  
 2. OnShowMode.**ON_RESUME**: 实现是在原生的onResumeFragments方法中回调，有两种情况会被回调：1) 通过各种startActivity方法启动一个Activity后返回的 2) 应用从后台返回时  
@@ -119,6 +124,16 @@ protected void onPostCreate(Bundle savedInstanceState) {
     SwipeBackUtil.enableSwipeBackAtActivity(this);
 }
 ```
+
+9、(**TEST**)抖动抑制
+使用方法：  
+在任意地方调用静态方法：
+```java
+ThrottleUtil.setThrottleTime(1000);
+```
+单位为ms(也有其他重载方法)
+
+作用为，当设置的时间不为0时，凡是通过本框架内的方法启动的界面都会进行抖动抑制，即只会触发设置的时间段内的第一个界面启动事件，类似Rxjava 的throttleFirst()方法
 
 
 ###License

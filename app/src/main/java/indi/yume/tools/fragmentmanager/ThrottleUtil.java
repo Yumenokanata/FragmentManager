@@ -14,11 +14,11 @@ public class ThrottleUtil {
     private static final AtomicLong throttleTime = new AtomicLong(0);
     private static final AtomicLong lastEventTime = new AtomicLong(0);
 
-    public static boolean checkEvent() {
+    static boolean checkEvent() {
         return checkEvent(true);
     }
 
-    public static boolean checkEvent(boolean saveCurrentTime) {
+    static boolean checkEvent(boolean saveCurrentTime) {
         long currentTime = System.currentTimeMillis();
         long throttle = throttleTime.get();
 
@@ -34,10 +34,10 @@ public class ThrottleUtil {
     }
 
     public static void setThrottleTime(long time) {
-        throttleTime.set(time);
+        throttleTime.set(Math.max(0, time));
     }
 
     public static void setThrottleTime(long time, TimeUnit unit) {
-        throttleTime.set(unit.toMillis(time));
+        setThrottleTime(unit.toMillis(time));
     }
 }
