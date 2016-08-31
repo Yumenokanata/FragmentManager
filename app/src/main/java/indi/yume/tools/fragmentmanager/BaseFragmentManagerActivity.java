@@ -250,7 +250,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(currentStackTag != null && fragmentMap != null) {
             List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
             if(list != null && !list.isEmpty())
-                list.get(0).onHide();
+                list.get(list.size() - 1).onHide(OnHideMode.ON_PAUSE);
         }
     }
 
@@ -370,18 +370,25 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             throw new Error("Tag: " + tag + " not in baseFragmentMap. [BaseFragmentWithTag()]");
 
         if((fragmentMap.containsKey(tag) && (forceSwitch || !TextUtils.equals(tag, currentStackTag)))
-                || (!fragmentMap.containsKey(tag) || fragmentMap.get(tag).size() == 0)){
+                || (!fragmentMap.containsKey(tag) || fragmentMap.get(tag).isEmpty())){
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
-            if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
+            if((fragmentMap.containsKey(currentStackTag) && !fragmentMap.get(currentStackTag).isEmpty()))
                 if(clearCurrentStack)
                     clearStackByTag(currentStackTag, fragmentTransaction);
                 else
                     hideStackByTag(currentStackTag, fragmentTransaction);
 
             BaseManagerFragment fragment = showStackByTagNoAnim(tag, fragmentTransaction);
+            String oldTag = currentStackTag;
             currentStackTag = tag;
             fragmentTransaction.commit();
+
+            if(fragmentMap.containsKey(oldTag) && !fragmentMap.get(oldTag).isEmpty()) {
+                List<BaseManagerFragment> list = fragmentMap.get(oldTag);
+                list.get(list.size() - 1).onHide(OnHideMode.ON_SWITCH);
+            }
+
             if(fragment != null) {
                 fragment.onShow(OnShowMode.ON_CREATE);
             } else {
@@ -393,10 +400,17 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void clearCurrentStack(){
+        clearCurrentStack(false);
+    }
+
+    public void clearCurrentStack(boolean resetCurrentTag){
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
             clearStackByTag(currentStackTag, fragmentTransaction);
+
+        if(!resetCurrentTag)
+            return;
 
         BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
         fragmentTransaction.commit();
@@ -479,7 +493,6 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 for(BaseManagerFragment f : entry.getValue())
                     if(willShowFragment != f && !f.isHidden()) {
                         fragmentTransaction.hide(f);
-                        f.onHide();
                     }
             fragmentTransaction.show(willShowFragment);
             return null;
@@ -643,7 +656,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                                     fragmentManager.beginTransaction()
                                             .hide(backFragment)
                                             .commit();
-                                    backFragment.onHide();
+                                    backFragment.onHide(OnHideMode.ON_START_NEW);
                                     nextFragment.onShow(OnShowMode.ON_CREATE);
                                 }
                             });

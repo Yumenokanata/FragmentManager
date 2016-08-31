@@ -9,6 +9,7 @@ import java.util.Map;
 
 import indi.yume.tools.fragmentmanager.BaseFragmentManagerActivity;
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.ThrottleUtil;
 
 public class MainActivity extends BaseFragmentManagerActivity {
 
@@ -29,6 +30,7 @@ public class MainActivity extends BaseFragmentManagerActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ThrottleUtil.setThrottleTime(1000);
 
         findViewById(R.id.tag1_btn).setOnClickListener(new View.OnClickListener() {
             @Override

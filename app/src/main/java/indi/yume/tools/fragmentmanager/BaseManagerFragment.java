@@ -277,7 +277,7 @@ public abstract class BaseManagerFragment extends Fragment {
             onCreatedViewListener.onCreatedView(view);
     }
 
-    protected void onHide(){ }
+    protected void onHide(@OnHideMode int hideMode){ }
 
     /**
      * start new fragment -> OnShowMode: onCreate

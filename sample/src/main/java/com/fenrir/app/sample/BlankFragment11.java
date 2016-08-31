@@ -7,7 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
+import indi.yume.tools.fragmentmanager.ThrottleUtil;
 import indi.yume.tools.fragmentmanager.Tuple2;
 import rx.functions.Action1;
 
@@ -39,11 +41,17 @@ public class BlankFragment11 extends BaseManagerFragment {
             public void onClick(View v) {
                 startFragmentForObservable(new Intent(getContext(), BlankFragment12.class))
                         .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
-                            @Override
-                            public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
-                                System.out.println("onResult: " + integerBundleTuple2.toString());
-                            }
-                        });
+                                       @Override
+                                       public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
+                                           System.out.println("onResult: " + integerBundleTuple2.toString());
+                                       }
+                                   },
+                                new Action1<Throwable>() {
+                                    @Override
+                                    public void call(Throwable throwable) {
+                                        throwable.printStackTrace();
+                                    }
+                                });
             }
         });
     }
@@ -61,8 +69,8 @@ public class BlankFragment11 extends BaseManagerFragment {
     }
 
     @Override
-    protected void onHide() {
-        super.onHide();
-        System.out.println(this.getClass().getSimpleName() + ": onHide");
+    protected void onHide(int hideMode) {
+        super.onHide(hideMode);
+        System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.Util.toString(hideMode));
     }
 }

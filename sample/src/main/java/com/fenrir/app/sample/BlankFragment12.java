@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
 import indi.yume.tools.fragmentmanager.SwipeBackLayout;
 
@@ -59,8 +60,8 @@ public class BlankFragment12 extends BaseManagerFragment {
     }
 
     @Override
-    protected void onHide() {
-        super.onHide();
-        System.out.println(this.getClass().getSimpleName() + ": onHide");
+    protected void onHide(int hideMode) {
+        super.onHide(hideMode);
+        System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.Util.toString(hideMode));
     }
 }
