@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import lombok.AllArgsConstructor;
+import lombok.experimental.Wither;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
@@ -132,6 +134,10 @@ public abstract class BaseManagerFragment extends Fragment {
         return (BaseFragmentManagerActivity) getActivity();
     }
 
+    public boolean isTopOfStack() {
+        return getManagerActivity().getCurrentStackSize() <= 1;
+    }
+
     public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
         return getManagerActivity().startActivityForObservable(intent);
     }
@@ -142,9 +148,16 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
+        startFragmentOnNewActivity(intent, activityClazz, true);
+    }
+
+    public void startFragmentOnNewActivity(Intent intent,
+                                           Class<? extends SingleBaseActivity> activityClazz,
+                                           boolean withAnimation){
         ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivity(
                 intent,
-                activityClazz);
+                activityClazz,
+                withAnimation);
     }
 
     public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
@@ -157,7 +170,8 @@ public abstract class BaseManagerFragment extends Fragment {
     private void startFragmentOnNewActivityForResult(Intent intent,
                                                      Class<? extends SingleBaseActivity> activityClazz,
                                                      int requestCode,
-                                                     boolean checkThrottle){
+                                                     boolean checkThrottle,
+                                                     boolean withAnimation){
         if(checkThrottle && !ThrottleUtil.checkEvent())
             return;
 
@@ -165,7 +179,8 @@ public abstract class BaseManagerFragment extends Fragment {
                 intent,
                 activityClazz,
                 requestCode,
-                false);
+                false,
+                withAnimation);
     }
 
     public void startFragment(Intent intent){
@@ -173,6 +188,10 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public void startFragment(Intent intent, boolean clearCurrentStack){
+        this.startFragment(intent, clearCurrentStack, true);
+    }
+
+    public void startFragment(Intent intent, boolean clearCurrentStack, boolean withAnimation){
         if(!ThrottleUtil.checkEvent())
             return;
 
@@ -183,7 +202,7 @@ public abstract class BaseManagerFragment extends Fragment {
             return;
 
         fragment.setIntent(intent);
-        ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack);
+        ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack, withAnimation);
     }
 
     public void startFragmentForResult(Intent intent, int requestCode){
@@ -191,13 +210,21 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public void startFragmentForResult(Intent intent, int requestCode, boolean clearCurrentStack){
-        this.startFragmentForResult(intent, requestCode, false, true);
+        this.startFragmentForResult(intent, requestCode, false, true, true);
     }
 
     private void startFragmentForResult(Intent intent,
                                         int requestCode,
                                         boolean clearCurrentStack,
                                         boolean checkThrottle){
+        this.startFragmentForResult(intent, requestCode, clearCurrentStack, checkThrottle, true);
+    }
+
+    private void startFragmentForResult(Intent intent,
+                                        int requestCode,
+                                        boolean clearCurrentStack,
+                                        boolean checkThrottle,
+                                        boolean withAnimation){
         if(checkThrottle && !ThrottleUtil.checkEvent())
             return;
 
@@ -209,10 +236,15 @@ public abstract class BaseManagerFragment extends Fragment {
 
         intent.putExtra(INTENT_KEY_REQUEST_CODE, requestCode);
         fragment.setIntent(intent);
-        ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack);
+        ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack, withAnimation);
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
+        return startFragmentForObservable(intent, true);
+    }
+
+    public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent,
+                                                                          boolean withAnimation) {
         if(!ThrottleUtil.checkEvent())
             return Observable.error(new ThrottleException());
 
@@ -220,7 +252,7 @@ public abstract class BaseManagerFragment extends Fragment {
             @Override
             public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
                 final int requestCode = random.nextInt();
-                startFragmentForResult(intent, requestCode, false, false);
+                startFragmentForResult(intent, requestCode, false, false, withAnimation);
                 onResultSubject.subscribe(
                         new Action1<Tuple3<Integer, Integer, Bundle>>() {
                             @Override
@@ -240,8 +272,16 @@ public abstract class BaseManagerFragment extends Fragment {
         });
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(Intent intent,
-                                                                                       Class<? extends SingleBaseActivity> activityClazz){
+    public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
+            Intent intent,
+            Class<? extends SingleBaseActivity> activityClazz){
+        return startFragmentOnNewActivityForObservable(intent, activityClazz, true);
+    }
+
+    public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
+            Intent intent,
+            Class<? extends SingleBaseActivity> activityClazz,
+            boolean withAnimation){
         if(!ThrottleUtil.checkEvent())
             return Observable.error(new ThrottleException());
 
@@ -249,7 +289,7 @@ public abstract class BaseManagerFragment extends Fragment {
             @Override
             public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
                 final int requestCode = random.nextInt() & 0x0000ffff;
-                startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, false);
+                startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, false, withAnimation);
                 onResultSubject.subscribe(
                         new Action1<Tuple3<Integer, Integer, Bundle>>() {
                             @Override
@@ -362,5 +402,41 @@ public abstract class BaseManagerFragment extends Fragment {
 
     interface OnCreatedViewListener {
         void onCreatedView(View view);
+    }
+
+    public static CreateBuilder startBuilder(Intent intent) {
+        return CreateBuilder.builder(intent);
+    }
+
+    @AllArgsConstructor
+    public static class CreateBuilder {
+        private final Intent intent;
+        @Wither private int resultCode = -1;
+        @Wither private boolean clearCurrentStack = false;
+        @Wither private boolean checkThrottle = false;
+        @Wither private boolean enableAnimation = true;
+        @Wither private Class<? extends SingleBaseActivity> newActivity;
+
+        private CreateBuilder(Intent intent) {
+            this.intent = intent;
+        }
+
+        public static CreateBuilder builder(Intent intent) {
+            return new CreateBuilder(intent);
+        }
+
+        public void start(BaseManagerFragment fragment) {
+            if(resultCode != -1) {
+                if(newActivity != null)
+                    fragment.startFragmentOnNewActivityForResult(intent, newActivity, resultCode, checkThrottle, enableAnimation);
+                else
+                    fragment.startFragmentForResult(intent, resultCode, false, checkThrottle, enableAnimation);
+            } else {
+                if(newActivity != null)
+                    fragment.startFragmentOnNewActivity(intent, newActivity, enableAnimation);
+                else
+                    fragment.startFragment(intent, checkThrottle, enableAnimation);
+            }
+        }
     }
 }

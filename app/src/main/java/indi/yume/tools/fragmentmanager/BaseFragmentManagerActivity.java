@@ -255,12 +255,21 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
+        startFragmentOnNewActivity(intent, activityClazz, true);
+    }
+
+    public void startFragmentOnNewActivity(Intent intent,
+                                           Class<? extends SingleBaseActivity> activityClazz,
+                                           boolean withAnimation){
         if(!ThrottleUtil.checkEvent())
             return;
 
         try {
             startActivity(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent));
-            overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
+            if(withAnimation)
+                overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
+            else
+                overridePendingTransition(-1, -1);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -273,13 +282,25 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     void startFragmentOnNewActivityForResult(Intent intent,
                                              Class<? extends SingleBaseActivity> activityClazz,
                                              int requestCode,
-                                             boolean checkThrottle){
+                                             boolean checkThrottle) {
+        startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, checkThrottle, true);
+    }
+
+
+    void startFragmentOnNewActivityForResult(Intent intent,
+                                             Class<? extends SingleBaseActivity> activityClazz,
+                                             int requestCode,
+                                             boolean checkThrottle,
+                                             boolean withAnimation){
         if(checkThrottle && !ThrottleUtil.checkEvent())
             return;
 
         try {
             startActivityForResult(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent), requestCode);
-            overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
+            if(withAnimation)
+                overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
+            else
+                overridePendingTransition(-1, -1);
             isStartForResult = true;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -314,6 +335,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void startFragment(Intent intent, boolean clearCurrentStack){
+        this.startFragment(intent, clearCurrentStack, true);
+    }
+    public void startFragment(Intent intent, boolean clearCurrentStack, boolean withAnimation){
         if(!ThrottleUtil.checkEvent())
             return;
 
@@ -322,7 +346,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             return;
 
         fragment.setIntent(intent);
-        addToStack(fragment, clearCurrentStack);
+        addToStack(fragment, clearCurrentStack, withAnimation);
     }
 
     private BaseManagerFragment getFragmentByIntent(Intent intent){
@@ -435,6 +459,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void addToStack(BaseManagerFragment fragment, boolean clearCurrentStack){
+        addToStack(fragment, clearCurrentStack, true);
+    }
+
+    public void addToStack(BaseManagerFragment fragment, boolean clearCurrentStack, boolean withAnimation){
         String targetTag = fragment.getStackTag();
         if(targetTag == null)
             targetTag = currentStackTag;
@@ -447,7 +475,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             clearStackByTag(currentStackTag, fragmentTransaction);
 
         currentStackTag = targetTag;
-        addFragmentWithAnim(currentStackTag, fragment);
+        if(withAnimation)
+            addFragmentWithAnim(currentStackTag, fragment);
+        else
+            addFragmentWithoutAnim(currentStackTag, fragment);
     }
 
     private void clearStackByTag(String tag, FragmentTransaction fragmentTransaction){
@@ -636,6 +667,29 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                         });
             }
         }
+    }
+
+    private void addFragmentWithoutAnim(String tag,
+                                        final BaseManagerFragment nextFragment) {
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        List<BaseManagerFragment> list = fragmentMap.get(tag);
+        if(!list.isEmpty()) {
+            final BaseManagerFragment backFragment = list.get(list.size() - 1);
+
+            fragmentTransaction.hide(backFragment);
+            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
+            fragmentTransaction.commit();
+
+            backFragment.onHide(OnHideMode.ON_START_NEW);
+            nextFragment.onShow(OnShowMode.ON_CREATE);
+        } else {
+            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
+            fragmentTransaction.commit();
+            nextFragment.onShow(OnShowMode.ON_CREATE);
+        }
+
+        list.add(nextFragment);
     }
 
     private void addFragmentWithAnim(String tag,

@@ -39,19 +39,22 @@ public class BlankFragment11 extends BaseManagerFragment {
         view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startFragmentForObservable(new Intent(getContext(), BlankFragment12.class))
-                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
-                                       @Override
-                                       public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
-                                           System.out.println("onResult: " + integerBundleTuple2.toString());
-                                       }
-                                   },
-                                new Action1<Throwable>() {
-                                    @Override
-                                    public void call(Throwable throwable) {
-                                        throwable.printStackTrace();
-                                    }
-                                });
+//                startFragmentForObservable(new Intent(getContext(), BlankFragment12.class))
+//                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+//                                       @Override
+//                                       public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
+//                                           System.out.println("onResult: " + integerBundleTuple2.toString());
+//                                       }
+//                                   },
+//                                new Action1<Throwable>() {
+//                                    @Override
+//                                    public void call(Throwable throwable) {
+//                                        throwable.printStackTrace();
+//                                    }
+//                                });
+                startBuilder(new Intent(getContext(), BlankFragment12.class))
+                        .withEnableAnimation(false)
+                        .start(BlankFragment11.this);
             }
         });
     }
