@@ -7,11 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.StartBuilder;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
-import indi.yume.tools.fragmentmanager.ThrottleUtil;
-import indi.yume.tools.fragmentmanager.Tuple2;
-import rx.functions.Action1;
 
 /**
  * Created by yume on 16-4-21.
@@ -52,7 +50,7 @@ public class BlankFragment11 extends BaseManagerFragment {
 //                                        throwable.printStackTrace();
 //                                    }
 //                                });
-                startBuilder(new Intent(getContext(), BlankFragment12.class))
+                StartBuilder.builder(new Intent(getContext(), BlankFragment12.class))
                         .withEnableAnimation(false)
                         .start(BlankFragment11.this);
             }

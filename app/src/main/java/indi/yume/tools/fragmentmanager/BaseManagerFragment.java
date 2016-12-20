@@ -167,11 +167,11 @@ public abstract class BaseManagerFragment extends Fragment {
                 requestCode);
     }
 
-    private void startFragmentOnNewActivityForResult(Intent intent,
-                                                     Class<? extends SingleBaseActivity> activityClazz,
-                                                     int requestCode,
-                                                     boolean checkThrottle,
-                                                     boolean withAnimation){
+    void startFragmentOnNewActivityForResult(Intent intent,
+                                             Class<? extends SingleBaseActivity> activityClazz,
+                                             int requestCode,
+                                             boolean checkThrottle,
+                                             boolean withAnimation){
         if(checkThrottle && !ThrottleUtil.checkEvent())
             return;
 
@@ -220,11 +220,25 @@ public abstract class BaseManagerFragment extends Fragment {
         this.startFragmentForResult(intent, requestCode, clearCurrentStack, checkThrottle, true);
     }
 
-    private void startFragmentForResult(Intent intent,
-                                        int requestCode,
-                                        boolean clearCurrentStack,
-                                        boolean checkThrottle,
-                                        boolean withAnimation){
+    void startFragmentForResult(Intent intent,
+                                int requestCode,
+                                boolean clearCurrentStack,
+                                boolean checkThrottle,
+                                boolean withAnimation){
+        startFragmentForResult(getManagerActivity(),
+                intent,
+                requestCode,
+                clearCurrentStack,
+                checkThrottle,
+                withAnimation);
+    }
+
+    static void startFragmentForResult(BaseFragmentManagerActivity activity,
+                                Intent intent,
+                                int requestCode,
+                                boolean clearCurrentStack,
+                                boolean checkThrottle,
+                                boolean withAnimation){
         if(checkThrottle && !ThrottleUtil.checkEvent())
             return;
 
@@ -236,7 +250,7 @@ public abstract class BaseManagerFragment extends Fragment {
 
         intent.putExtra(INTENT_KEY_REQUEST_CODE, requestCode);
         fragment.setIntent(intent);
-        ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack, withAnimation);
+        activity.addToStack(fragment, clearCurrentStack, withAnimation);
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
@@ -364,7 +378,7 @@ public abstract class BaseManagerFragment extends Fragment {
         savedInstanceStateMap.put(hashTag, onResultSubject);
     }
 
-    private BaseManagerFragment getFragmentByIntent(Intent intent){
+    private static BaseManagerFragment getFragmentByIntent(Intent intent){
         Class clazz;
         try {
             clazz = Class.forName(intent.getComponent().getClassName());
@@ -394,7 +408,7 @@ public abstract class BaseManagerFragment extends Fragment {
         ((BaseFragmentManagerActivity)getActivity()).removeFragment(this);
     }
 
-    private void checkThread(){
+    private static void checkThread(){
         if(Looper.myLooper() != Looper.getMainLooper()) {
             throw new RuntimeException("Must run on main thread!");
         }
@@ -402,41 +416,5 @@ public abstract class BaseManagerFragment extends Fragment {
 
     interface OnCreatedViewListener {
         void onCreatedView(View view);
-    }
-
-    public static CreateBuilder startBuilder(Intent intent) {
-        return CreateBuilder.builder(intent);
-    }
-
-    @AllArgsConstructor
-    public static class CreateBuilder {
-        private final Intent intent;
-        @Wither private int resultCode = -1;
-        @Wither private boolean clearCurrentStack = false;
-        @Wither private boolean checkThrottle = false;
-        @Wither private boolean enableAnimation = true;
-        @Wither private Class<? extends SingleBaseActivity> newActivity;
-
-        private CreateBuilder(Intent intent) {
-            this.intent = intent;
-        }
-
-        public static CreateBuilder builder(Intent intent) {
-            return new CreateBuilder(intent);
-        }
-
-        public void start(BaseManagerFragment fragment) {
-            if(resultCode != -1) {
-                if(newActivity != null)
-                    fragment.startFragmentOnNewActivityForResult(intent, newActivity, resultCode, checkThrottle, enableAnimation);
-                else
-                    fragment.startFragmentForResult(intent, resultCode, false, checkThrottle, enableAnimation);
-            } else {
-                if(newActivity != null)
-                    fragment.startFragmentOnNewActivity(intent, newActivity, enableAnimation);
-                else
-                    fragment.startFragment(intent, checkThrottle, enableAnimation);
-            }
-        }
     }
 }

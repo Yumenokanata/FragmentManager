@@ -349,6 +349,15 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         addToStack(fragment, clearCurrentStack, withAnimation);
     }
 
+    void startFragmentForResult(Intent intent,
+                                int requestCode,
+                                boolean clearCurrentStack,
+                                boolean checkThrottle,
+                                boolean withAnimation){
+        BaseManagerFragment.startFragmentForResult(this, intent, requestCode, clearCurrentStack,
+                checkThrottle, withAnimation);
+    }
+
     private BaseManagerFragment getFragmentByIntent(Intent intent){
         Class clazz;
         try {
