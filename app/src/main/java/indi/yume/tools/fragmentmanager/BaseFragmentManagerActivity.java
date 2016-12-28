@@ -156,6 +156,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         this.isShowAnimWhenFinish = isShowAnimWhenFinish;
     }
 
+    private void fragmentOnCreateShow(BaseManagerFragment fragment) {
+        fragment.setOnCreatedViewListener(v -> {
+            fragment.onShow(OnShowMode.ON_CREATE);
+            fragment.setOnCreatedViewListener(null);
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -177,7 +184,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 BaseManagerFragment fragment = showStackByTagNoAnim(stackTag, transaction);
                 transaction.commit();
                 if(fragment != null)
-                    fragment.onShow(OnShowMode.ON_CREATE);
+                    fragmentOnCreateShow(fragment);
                 currentStackTag = stackTag;
             }
         }
@@ -423,7 +430,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             }
 
             if(fragment != null) {
-                fragment.onShow(OnShowMode.ON_CREATE);
+                fragmentOnCreateShow(fragment);
             } else {
                 BaseManagerFragment currentFragment = getCurrentFragment();
                 if(currentFragment != null)
@@ -448,7 +455,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
         fragmentTransaction.commit();
         if(fragment != null) {
-            fragment.onShow(OnShowMode.ON_CREATE);
+            fragmentOnCreateShow(fragment);
         } else {
             BaseManagerFragment currentFragment = getCurrentFragment();
             if(currentFragment != null)
@@ -690,12 +697,16 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
 
-            backFragment.onHide(OnHideMode.ON_START_NEW);
-            nextFragment.onShow(OnShowMode.ON_CREATE);
+            nextFragment.setOnCreatedViewListener(v -> {
+                backFragment.onHide(OnHideMode.ON_START_NEW);
+                nextFragment.onShow(OnShowMode.ON_CREATE);
+                nextFragment.setOnCreatedViewListener(null);
+            });
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
-            nextFragment.onShow(OnShowMode.ON_CREATE);
+
+            fragmentOnCreateShow(nextFragment);
         }
 
         list.add(nextFragment);
@@ -721,6 +732,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                                             .commit();
                                     backFragment.onHide(OnHideMode.ON_START_NEW);
                                     nextFragment.onShow(OnShowMode.ON_CREATE);
+                                    nextFragment.setOnCreatedViewListener(null);
                                 }
                             });
                 }
@@ -732,7 +744,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
-            nextFragment.onShow(OnShowMode.ON_CREATE);
+            fragmentOnCreateShow(nextFragment);
         }
         list.add(nextFragment);
     }
