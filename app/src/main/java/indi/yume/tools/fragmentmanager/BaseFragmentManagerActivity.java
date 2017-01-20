@@ -60,6 +60,24 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         return false;
     }
 
+    @AnimRes
+    private int getExitAnim(BaseManagerFragment fragment) {
+        int fragmentAnim = fragment.provideExitAnim();
+        if(fragmentAnim == -1)
+            return fragmentExitAnim;
+        else
+            return fragmentAnim;
+    }
+
+    @AnimRes
+    private int getEnterAnim(BaseManagerFragment fragment) {
+        int fragmentAnim = fragment.provideEnterAnim();
+        if(fragmentAnim == -1)
+            return fragmentEnterAnim;
+        else
+            return fragmentAnim;
+    }
+
     public void setOnStackChangedListener(OnStackChangedListener onStackChangedListener) {
         this.mOnStackChangedListener = onStackChangedListener;
     }
@@ -272,11 +290,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             return;
 
         try {
-            startActivity(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent));
-            if(withAnimation)
-                overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
-            else
+            Class fragmentClazz = Class.forName(intent.getComponent().getClassName());
+            startActivity(SingleBaseActivity.createIntent(this, fragmentClazz, activityClazz, intent));
+            if(withAnimation) {
+                overridePendingTransition(getEnterAnim(getFragmentByClass(fragmentClazz)), activityEnterStayAnim);
+            } else {
                 overridePendingTransition(-1, -1);
+            }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -303,11 +323,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             return;
 
         try {
-            startActivityForResult(SingleBaseActivity.createIntent(this, Class.forName(intent.getComponent().getClassName()), activityClazz, intent), requestCode);
-            if(withAnimation)
-                overridePendingTransition(fragmentEnterAnim, activityEnterStayAnim);
-            else
+            Class fragmentClazz = Class.forName(intent.getComponent().getClassName());
+            startActivityForResult(SingleBaseActivity.createIntent(this, fragmentClazz, activityClazz, intent), requestCode);
+            if(withAnimation){
+                overridePendingTransition(getEnterAnim(getFragmentByClass(fragmentClazz)), activityEnterStayAnim);
+            } else {
                 overridePendingTransition(-1, -1);
+            }
             isStartForResult = true;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -638,6 +660,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     private void removeFragmentWithAnim(String tag) {
         List<BaseManagerFragment> list = fragmentMap.get(tag);
         if(list.size() <= 1) {
+            int exitAnim = -1;
             if(list.size() == 1) {
                 BaseManagerFragment fragment = list.get(0);
                 fragment.preBackResultData();
@@ -645,10 +668,11 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 if(fragment.getResultData() != null)
                     intent.putExtras(fragment.getResultData());
                 setResult(fragment.getResultCode(), intent);
+                exitAnim = getExitAnim(fragment);
             }
             supportFinishAfterTransition();
             if(isShowAnimWhenFinish)
-                overridePendingTransition(0, fragmentExitAnim);
+                overridePendingTransition(0, exitAnim);
         } else {
             final BaseManagerFragment fragment = list.get(list.size() - 1);
             list.remove(fragment);
@@ -664,13 +688,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 //            showStackByTagNoAnim(currentStackTag, fragmentTransaction1);
             fragmentTransaction.show(fragment1);
 
-            if(fragmentExitAnim == 0) {
+            int exitAnim = getExitAnim(fragment);
+            if(exitAnim == -1) {
                 fragmentTransaction.remove(fragment)
                         .commit();
             } else {
                 fragmentTransaction.commit();
 
-                startAnimation(fragmentExitAnim,
+                startAnimation(exitAnim,
                         fragment.getView(),
                         new Action0() {
                             @Override
@@ -717,12 +742,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
-        if(!list.isEmpty() && fragmentEnterAnim != 0) {
+        int enterAnim = getEnterAnim(nextFragment);
+        if(!list.isEmpty() && enterAnim != 0) {
             final BaseManagerFragment backFragment = list.get(list.size() - 1);
             nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
                 @Override
                 public void onCreatedView(View view) {
-                    startAnimation(fragmentEnterAnim,
+                    startAnimation(enterAnim,
                             view,
                             new Action0() {
                                 @Override

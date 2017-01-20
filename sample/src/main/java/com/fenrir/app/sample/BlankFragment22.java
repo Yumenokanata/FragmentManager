@@ -20,6 +20,16 @@ public class BlankFragment22 extends BaseManagerFragment {
         // Required empty public constructor
     }
 
+    @Override
+    protected int provideEnterAnim() {
+        return R.anim.fragment_bottom_enter;
+    }
+
+    @Override
+    protected int provideExitAnim() {
+        return R.anim.fragment_bottom_exit;
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

@@ -11,6 +11,7 @@ import android.widget.Toast;
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
+import indi.yume.tools.fragmentmanager.StartBuilder;
 import indi.yume.tools.fragmentmanager.Tuple2;
 import rx.functions.Action1;
 
@@ -43,21 +44,25 @@ public class BlankFragment21 extends BaseManagerFragment {
             @Override
             public void onClick(View v) {
 //                startFragment(new Intent(getContext(), BlankFragment22.class));
-                startFragmentOnNewActivityForObservable(
-                        new Intent(getContext(), BlankFragment22.class),
-                        SingleTagActivity.class)
-                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
-                                       @Override
-                                       public void call(Tuple2<Integer, Bundle> event) {
-                                           Toast.makeText(context, event.getData2().getString("result"), Toast.LENGTH_LONG).show();
-                                       }
-                                   },
-                                new Action1<Throwable>() {
-                                    @Override
-                                    public void call(Throwable throwable) {
-                                        throwable.printStackTrace();
-                                    }
-                                });
+//                startFragmentOnNewActivityForObservable(
+//                        new Intent(getContext(), BlankFragment22.class),
+//                        SingleTagActivity.class)
+//                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+//                                       @Override
+//                                       public void call(Tuple2<Integer, Bundle> event) {
+//                                           Toast.makeText(context, event.getData2().getString("result"), Toast.LENGTH_LONG).show();
+//                                       }
+//                                   },
+//                                new Action1<Throwable>() {
+//                                    @Override
+//                                    public void call(Throwable throwable) {
+//                                        throwable.printStackTrace();
+//                                    }
+//                                });
+                StartBuilder.builder(new Intent(getContext(), BlankFragment22.class))
+                        .withEnableAnimation(true)
+                        .withNewActivity(SingleTagActivity.class)
+                        .start(BlankFragment21.this);
             }
         });
         view.findViewById(R.id.jump_activity_button)

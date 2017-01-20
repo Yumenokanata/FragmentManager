@@ -51,7 +51,7 @@ public class BlankFragment11 extends BaseManagerFragment {
 //                                    }
 //                                });
                 StartBuilder.builder(new Intent(getContext(), BlankFragment12.class))
-                        .withEnableAnimation(false)
+                        .withEnableAnimation(true)
                         .start(BlankFragment11.this);
             }
         });

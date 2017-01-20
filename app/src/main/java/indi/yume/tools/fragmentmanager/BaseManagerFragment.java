@@ -3,6 +3,7 @@ package indi.yume.tools.fragmentmanager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
+import android.support.annotation.AnimRes;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import indi.yume.tools.renderercalendar.R;
 import lombok.AllArgsConstructor;
 import lombok.experimental.Wither;
 import rx.Observable;
@@ -41,6 +43,16 @@ public abstract class BaseManagerFragment extends Fragment {
     public static final String INTENT_KEY_STACK_TAG = "stackTag";
 
     private OnCreatedViewListener onCreatedViewListener;
+
+    @AnimRes
+    protected int provideEnterAnim() {
+        return -1;
+    }
+
+    @AnimRes
+    protected int provideExitAnim() {
+        return -1;
+    }
 
     private String stackTag;
     private String hashTag;
