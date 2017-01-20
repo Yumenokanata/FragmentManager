@@ -16,6 +16,7 @@ import java.util.Random;
 
 import indi.yume.tools.renderercalendar.R;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.experimental.Wither;
 import rx.Observable;
 import rx.Subscriber;
@@ -23,6 +24,8 @@ import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
+
+import static indi.yume.tools.fragmentmanager.Utils.checkThread;
 
 /**
  * Created by yume on 15/9/24.
@@ -32,7 +35,8 @@ public abstract class BaseManagerFragment extends Fragment {
 
     private static final Random random = new Random();
 
-    private static final String INTENT_KEY_REQUEST_CODE = "requestCode";
+    static final String INTENT_KEY_REQUEST_CODE = "request_code";
+    static final String INTENT_KEY_ANIM_DATA = "anim_data";
 
     private static final String SAVE_STORE_HASH_CODE = "manager_hash_code";
     private static final String SAVE_STORE_REQUEST_CODE = "manager_request_code";
@@ -44,6 +48,9 @@ public abstract class BaseManagerFragment extends Fragment {
 
     private OnCreatedViewListener onCreatedViewListener;
 
+    @Getter(lazy = true)
+    private final AnimData intentAnim = genIntentAnim();
+
     @AnimRes
     protected int provideEnterAnim() {
         return -1;
@@ -52,6 +59,11 @@ public abstract class BaseManagerFragment extends Fragment {
     @AnimRes
     protected int provideExitAnim() {
         return -1;
+    }
+
+    @AnimRes
+    protected int provideStayAnim() {
+        return R.anim.stay_anim;
     }
 
     private String stackTag;
@@ -69,6 +81,14 @@ public abstract class BaseManagerFragment extends Fragment {
         super();
         stackTag = setDefaultStackTag();
         hashTag = String.valueOf(hashCode());
+    }
+
+    AnimData genIntentAnim() {
+        Intent intent = getIntent();
+        if(intent != null) {
+            return intent.getParcelableExtra(INTENT_KEY_ANIM_DATA);
+        }
+        return null;
     }
 
     @Override
@@ -159,24 +179,27 @@ public abstract class BaseManagerFragment extends Fragment {
         onResultSubject.onNext(Tuple3.of(requestCode, resultCode, data));
     }
 
+    public void start(StartBuilder builder) {
+        getManagerActivity().start(builder);
+    }
+
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
-        startFragmentOnNewActivity(intent, activityClazz, true);
+        start(StartBuilder.builder(intent)
+                .withNewActivity(activityClazz));
     }
 
     public void startFragmentOnNewActivity(Intent intent,
                                            Class<? extends SingleBaseActivity> activityClazz,
                                            boolean withAnimation){
-        ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivity(
-                intent,
-                activityClazz,
-                withAnimation);
+        start(StartBuilder.builder(intent)
+                .withNewActivity(activityClazz)
+                .withEnableAnimation(withAnimation));
     }
 
     public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
-        ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivityForResult(
-                intent,
-                activityClazz,
-                requestCode);
+        start(StartBuilder.builder(intent)
+                .withNewActivity(activityClazz)
+                .withRequestCode(requestCode));
     }
 
     void startFragmentOnNewActivityForResult(Intent intent,
@@ -184,15 +207,11 @@ public abstract class BaseManagerFragment extends Fragment {
                                              int requestCode,
                                              boolean checkThrottle,
                                              boolean withAnimation){
-        if(checkThrottle && !ThrottleUtil.checkEvent())
-            return;
-
-        ((BaseFragmentManagerActivity)getActivity()).startFragmentOnNewActivityForResult(
-                intent,
-                activityClazz,
-                requestCode,
-                false,
-                withAnimation);
+        start(StartBuilder.builder(intent)
+                .withNewActivity(activityClazz)
+                .withRequestCode(requestCode)
+                .withCheckThrottle(checkThrottle)
+                .withEnableAnimation(withAnimation));
     }
 
     public void startFragment(Intent intent){
@@ -204,17 +223,9 @@ public abstract class BaseManagerFragment extends Fragment {
     }
 
     public void startFragment(Intent intent, boolean clearCurrentStack, boolean withAnimation){
-        if(!ThrottleUtil.checkEvent())
-            return;
-
-        checkThread();
-
-        BaseManagerFragment fragment = getFragmentByIntent(intent);
-        if(fragment == null)
-            return;
-
-        fragment.setIntent(intent);
-        ((BaseFragmentManagerActivity)getActivity()).addToStack(fragment, clearCurrentStack, withAnimation);
+        getManagerActivity().start(StartBuilder.builder(intent)
+                .withClearCurrentStack(clearCurrentStack)
+                .withEnableAnimation(withAnimation));
     }
 
     public void startFragmentForResult(Intent intent, int requestCode){
@@ -251,18 +262,37 @@ public abstract class BaseManagerFragment extends Fragment {
                                 boolean clearCurrentStack,
                                 boolean checkThrottle,
                                 boolean withAnimation){
-        if(checkThrottle && !ThrottleUtil.checkEvent())
-            return;
+        activity.start(StartBuilder.builder(intent)
+                .withRequestCode(requestCode)
+                .withClearCurrentStack(clearCurrentStack)
+                .withCheckThrottle(checkThrottle)
+                .withEnableAnimation(withAnimation));
+    }
 
-        checkThread();
+    public Observable<Tuple2<Integer, Bundle>> startForObservable(RxStarBuilder builder) {
+        final Intent intent = builder.getIntent();
+        boolean checkThrottle = builder.isCheckThrottle();
+        boolean enableAnimation = builder.isEnableAnimation();
+        Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
+        AnimData anim = enableAnimation ? builder.getAnim() : null;
 
-        BaseManagerFragment fragment = getFragmentByIntent(intent);
-        if(fragment == null)
-            return;
+        return Observable.create(sub -> {
+            if(checkThrottle && !ThrottleUtil.checkEvent())
+                throw new ThrottleException();
 
-        intent.putExtra(INTENT_KEY_REQUEST_CODE, requestCode);
-        fragment.setIntent(intent);
-        activity.addToStack(fragment, clearCurrentStack, withAnimation);
+            final int requestCode1 = random.nextInt() & 0x0000ffff;
+            start(StartBuilder.builder(intent)
+                    .withNewActivity(newActivity)
+                    .withRequestCode(requestCode1)
+                    .withAnimData(anim));
+            onResultSubject.subscribe(
+                    tuple -> {
+                        if (requestCode1 == tuple.getData1())
+                            sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                        sub.onCompleted();
+                    },
+                    sub::onError);
+        });
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
@@ -271,31 +301,7 @@ public abstract class BaseManagerFragment extends Fragment {
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent,
                                                                           boolean withAnimation) {
-        if(!ThrottleUtil.checkEvent())
-            return Observable.error(new ThrottleException());
-
-        return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
-            @Override
-            public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
-                final int requestCode = random.nextInt();
-                startFragmentForResult(intent, requestCode, false, false, withAnimation);
-                onResultSubject.subscribe(
-                        new Action1<Tuple3<Integer, Integer, Bundle>>() {
-                            @Override
-                            public void call(Tuple3<Integer, Integer, Bundle> tuple) {
-                                if (requestCode == tuple.getData1())
-                                    sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                                sub.onCompleted();
-                            }
-                        },
-                        new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                sub.onError(throwable);
-                            }
-                        });
-            }
-        });
+        return startForObservable(RxStarBuilder.builder(intent).withEnableAnimation(withAnimation));
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
@@ -308,31 +314,9 @@ public abstract class BaseManagerFragment extends Fragment {
             Intent intent,
             Class<? extends SingleBaseActivity> activityClazz,
             boolean withAnimation){
-        if(!ThrottleUtil.checkEvent())
-            return Observable.error(new ThrottleException());
-
-        return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
-            @Override
-            public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
-                final int requestCode = random.nextInt() & 0x0000ffff;
-                startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, false, withAnimation);
-                onResultSubject.subscribe(
-                        new Action1<Tuple3<Integer, Integer, Bundle>>() {
-                            @Override
-                            public void call(Tuple3<Integer, Integer, Bundle> tuple) {
-                                if (requestCode == tuple.getData1())
-                                    sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                                sub.onCompleted();
-                            }
-                        },
-                        new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                sub.onError(throwable);
-                            }
-                        });
-            }
-        });
+        return startForObservable(RxStarBuilder.builder(intent)
+                .withNewActivity(activityClazz)
+                .withEnableAnimation(withAnimation));
     }
 
     @CallSuper
@@ -418,12 +402,6 @@ public abstract class BaseManagerFragment extends Fragment {
     public void finish(){
         checkThread();
         ((BaseFragmentManagerActivity)getActivity()).removeFragment(this);
-    }
-
-    private static void checkThread(){
-        if(Looper.myLooper() != Looper.getMainLooper()) {
-            throw new RuntimeException("Must run on main thread!");
-        }
     }
 
     interface OnCreatedViewListener {

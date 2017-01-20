@@ -11,6 +11,7 @@ import android.widget.Toast;
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
+import indi.yume.tools.fragmentmanager.RxStarBuilder;
 import indi.yume.tools.fragmentmanager.StartBuilder;
 import indi.yume.tools.fragmentmanager.Tuple2;
 import rx.functions.Action1;
@@ -59,10 +60,16 @@ public class BlankFragment21 extends BaseManagerFragment {
 //                                        throwable.printStackTrace();
 //                                    }
 //                                });
-                StartBuilder.builder(new Intent(getContext(), BlankFragment22.class))
+                RxStarBuilder.builder(new Intent(getContext(), BlankFragment22.class))
                         .withEnableAnimation(true)
                         .withNewActivity(SingleTagActivity.class)
-                        .start(BlankFragment21.this);
+                        .startForObservable(BlankFragment21.this)
+                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple2<Integer, Bundle> t) {
+                                Toast.makeText(context, t.getData2().getString("result"), Toast.LENGTH_LONG).show();
+                            }
+                        });
             }
         });
         view.findViewById(R.id.jump_activity_button)

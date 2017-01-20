@@ -1,20 +1,17 @@
 package indi.yume.tools.fragmentmanager;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.WeakHashMap;
 
 import lombok.Data;
 import lombok.experimental.UtilityClass;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;

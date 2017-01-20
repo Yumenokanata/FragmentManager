@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
@@ -24,6 +23,10 @@ import java.util.Map;
 import indi.yume.tools.renderercalendar.R;
 import rx.Observable;
 import rx.functions.Action0;
+
+import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_ANIM_DATA;
+import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_REQUEST_CODE;
+import static indi.yume.tools.fragmentmanager.Utils.checkThread;
 
 /**
  * Created by yume on 15/9/24.
@@ -60,26 +63,20 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         return false;
     }
 
+    public void setOnStackChangedListener(OnStackChangedListener onStackChangedListener) {
+        this.mOnStackChangedListener = onStackChangedListener;
+    }
+
     @AnimRes
     private int getExitAnim(BaseManagerFragment fragment) {
+        AnimData anim = fragment.getIntentAnim();
         int fragmentAnim = fragment.provideExitAnim();
-        if(fragmentAnim == -1)
+        if(anim != null && !anim.isEmpty())
+            return anim.getExitAnim();
+        else if(fragmentAnim == -1)
             return fragmentExitAnim;
         else
             return fragmentAnim;
-    }
-
-    @AnimRes
-    private int getEnterAnim(BaseManagerFragment fragment) {
-        int fragmentAnim = fragment.provideEnterAnim();
-        if(fragmentAnim == -1)
-            return fragmentEnterAnim;
-        else
-            return fragmentAnim;
-    }
-
-    public void setOnStackChangedListener(OnStackChangedListener onStackChangedListener) {
-        this.mOnStackChangedListener = onStackChangedListener;
     }
 
     protected String getCurrentStackTag() {
@@ -139,8 +136,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 .commitAllowingStateLoss();
     }
 
-    public void setFragmentAnim(@AnimRes int enterAnim,
-                                @AnimRes int exitAnim) {
+    public void setDefaultFragmentAnim(@AnimRes int enterAnim,
+                                       @AnimRes int exitAnim) {
         this.fragmentEnterAnim = enterAnim;
         this.fragmentExitAnim = exitAnim;
     }
@@ -158,9 +155,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
      *                                 android:duration="2000" />
      *                             please set animation time to fit your enter anim for start new activity.
      */
-    public void setFragmentAnim(@AnimRes int enterAnim,
-                                @AnimRes int exitAnim,
-                                @AnimRes int activityEnterStyAnim) {
+    public void setDefaultFragmentAnim(@AnimRes int enterAnim,
+                                       @AnimRes int exitAnim,
+                                       @AnimRes int activityEnterStyAnim) {
         this.fragmentEnterAnim = enterAnim;
         this.fragmentExitAnim = exitAnim;
         this.activityEnterStayAnim = activityEnterStyAnim;
@@ -279,27 +276,102 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         }
     }
 
+    @Nullable
+    private AnimData compareAnim(AnimData builderAnim, Class fragmentClass, AnimData defaultAnim) {
+        if(builderAnim != null && !builderAnim.isEmpty())
+            return builderAnim;
+
+        BaseManagerFragment fragment = getFragmentByClass(fragmentClass);
+        if(fragment != null
+                && (fragment.provideEnterAnim() != -1 || fragment.provideExitAnim() != -1))
+            return AnimData.builder()
+                    .enterAnim(fragment.provideEnterAnim())
+                    .exitAnim(fragment.provideExitAnim())
+                    .stayAnim(fragment.provideStayAnim())
+                    .build();
+
+        return defaultAnim != null && !defaultAnim.isEmpty() ? defaultAnim : null;
+    }
+
+    public void start(StartBuilder builder) {
+        if(builder.isCheckThrottle() && !ThrottleUtil.checkEvent())
+            return;
+
+        final Intent intent = builder.getIntent();
+        int requestCode = builder.getRequestCode();
+        boolean clearCurrentStack = builder.isClearCurrentStack();
+        boolean enableAnimation = builder.isEnableAnimation();
+        Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
+
+        Class fragmentClazz;
+        try {
+            fragmentClazz = Class.forName(intent.getComponent().getClassName());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        if(newActivity != null) {
+            if(requestCode != -1) {
+                startActivityForResult(SingleBaseActivity.createIntent(this, fragmentClazz, newActivity, intent), requestCode);
+                isStartForResult = true;
+            } else {
+                startActivity(SingleBaseActivity.createIntent(this, fragmentClazz, newActivity, intent));
+            }
+            if(enableAnimation) {
+                AnimData anim = compareAnim(builder.getAnim(), fragmentClazz, defaultAnimData());
+                overridePendingTransition(anim);
+                intent.putExtra(INTENT_KEY_ANIM_DATA, anim);
+            } else
+                overridePendingTransition(-1, -1);
+        } else {
+            checkThread();
+            AnimData anim = enableAnimation ?
+                    compareAnim(builder.getAnim(), fragmentClazz, defaultAnimData())
+                    : null;
+
+            BaseManagerFragment fragment = getFragmentByIntent(intent);
+            if(fragment == null)
+                return;
+
+            if(requestCode != -1)
+                intent.putExtra(INTENT_KEY_REQUEST_CODE, requestCode);
+            intent.putExtra(INTENT_KEY_ANIM_DATA, anim);
+
+            fragment.setIntent(intent);
+            addToStack(fragment, clearCurrentStack, anim);
+        }
+    }
+
+    private void overridePendingTransition(AnimData anim) {
+        if(anim != null && !anim.isEmpty())
+            overridePendingTransition(anim.getEnterAnim(), anim.getStayAnim());
+        else
+            overridePendingTransition(-1, -1);
+    }
+
+    @Nullable
+    private AnimData defaultAnimData() {
+        if(fragmentEnterAnim == -1 || fragmentExitAnim == -1)
+            return null;
+        return AnimData.builder()
+                .enterAnim(fragmentEnterAnim)
+                .exitAnim(fragmentExitAnim)
+                .stayAnim(activityEnterStayAnim)
+                .build();
+    }
+
     public void startFragmentOnNewActivity(Intent intent, Class<? extends SingleBaseActivity> activityClazz){
-        startFragmentOnNewActivity(intent, activityClazz, true);
+        startFragmentOnNewActivity(intent, activityClazz, defaultAnimData());
     }
 
     public void startFragmentOnNewActivity(Intent intent,
                                            Class<? extends SingleBaseActivity> activityClazz,
-                                           boolean withAnimation){
-        if(!ThrottleUtil.checkEvent())
-            return;
-
-        try {
-            Class fragmentClazz = Class.forName(intent.getComponent().getClassName());
-            startActivity(SingleBaseActivity.createIntent(this, fragmentClazz, activityClazz, intent));
-            if(withAnimation) {
-                overridePendingTransition(getEnterAnim(getFragmentByClass(fragmentClazz)), activityEnterStayAnim);
-            } else {
-                overridePendingTransition(-1, -1);
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+                                           @Nullable AnimData anim){
+        start(StartBuilder.builder(intent)
+                .withCheckThrottle(true)
+                .withNewActivity(activityClazz)
+                .withAnimData(anim));
     }
 
     public void startFragmentOnNewActivityForResult(Intent intent, Class<? extends SingleBaseActivity> activityClazz, int requestCode){
@@ -313,27 +385,16 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         startFragmentOnNewActivityForResult(intent, activityClazz, requestCode, checkThrottle, true);
     }
 
-
     void startFragmentOnNewActivityForResult(Intent intent,
                                              Class<? extends SingleBaseActivity> activityClazz,
                                              int requestCode,
                                              boolean checkThrottle,
                                              boolean withAnimation){
-        if(checkThrottle && !ThrottleUtil.checkEvent())
-            return;
-
-        try {
-            Class fragmentClazz = Class.forName(intent.getComponent().getClassName());
-            startActivityForResult(SingleBaseActivity.createIntent(this, fragmentClazz, activityClazz, intent), requestCode);
-            if(withAnimation){
-                overridePendingTransition(getEnterAnim(getFragmentByClass(fragmentClazz)), activityEnterStayAnim);
-            } else {
-                overridePendingTransition(-1, -1);
-            }
-            isStartForResult = true;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        start(StartBuilder.builder(intent)
+                .withNewActivity(activityClazz)
+                .withRequestCode(requestCode)
+                .withCheckThrottle(checkThrottle)
+                .withAnimData(withAnimation ? defaultAnimData() : null));
     }
 
     public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
@@ -367,15 +428,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         this.startFragment(intent, clearCurrentStack, true);
     }
     public void startFragment(Intent intent, boolean clearCurrentStack, boolean withAnimation){
-        if(!ThrottleUtil.checkEvent())
-            return;
-
-        BaseManagerFragment fragment = getFragmentByIntent(intent);
-        if(fragment == null)
-            return;
-
-        fragment.setIntent(intent);
-        addToStack(fragment, clearCurrentStack, withAnimation);
+        start(StartBuilder.builder(intent)
+                .withClearCurrentStack(clearCurrentStack)
+                .withEnableAnimation(withAnimation));
     }
 
     void startFragmentForResult(Intent intent,
@@ -501,6 +556,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void addToStack(BaseManagerFragment fragment, boolean clearCurrentStack, boolean withAnimation){
+        addToStack(fragment, clearCurrentStack, withAnimation ? defaultAnimData() : null);
+    }
+
+    public void addToStack(BaseManagerFragment fragment, boolean clearCurrentStack, AnimData animData){
         String targetTag = fragment.getStackTag();
         if(targetTag == null)
             targetTag = currentStackTag;
@@ -513,10 +572,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             clearStackByTag(currentStackTag, fragmentTransaction);
 
         currentStackTag = targetTag;
-        if(withAnimation)
-            addFragmentWithAnim(currentStackTag, fragment);
-        else
-            addFragmentWithoutAnim(currentStackTag, fragment);
+        addFragment(currentStackTag, fragment, animData);
     }
 
     private void clearStackByTag(String tag, FragmentTransaction fragmentTransaction){
@@ -710,45 +766,18 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         }
     }
 
-    private void addFragmentWithoutAnim(String tag,
-                                        final BaseManagerFragment nextFragment) {
+    private void addFragment(String tag,
+                             final BaseManagerFragment nextFragment,
+                             @Nullable AnimData anim) {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
-        if(!list.isEmpty()) {
-            final BaseManagerFragment backFragment = list.get(list.size() - 1);
-
-            fragmentTransaction.hide(backFragment);
-            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
-            fragmentTransaction.commit();
-
-            nextFragment.setOnCreatedViewListener(v -> {
-                backFragment.onHide(OnHideMode.ON_START_NEW);
-                nextFragment.onShow(OnShowMode.ON_CREATE);
-                nextFragment.setOnCreatedViewListener(null);
-            });
-        } else {
-            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
-            fragmentTransaction.commit();
-
-            fragmentOnCreateShow(nextFragment);
-        }
-
-        list.add(nextFragment);
-    }
-
-    private void addFragmentWithAnim(String tag,
-                                     final BaseManagerFragment nextFragment) {
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-
-        List<BaseManagerFragment> list = fragmentMap.get(tag);
-        int enterAnim = getEnterAnim(nextFragment);
-        if(!list.isEmpty() && enterAnim != 0) {
+        if(!list.isEmpty() && anim != null && !anim.isEmpty()) {
             final BaseManagerFragment backFragment = list.get(list.size() - 1);
             nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
                 @Override
                 public void onCreatedView(View view) {
-                    startAnimation(enterAnim,
+                    startAnimation(anim.getEnterAnim(),
                             view,
                             new Action0() {
                                 @Override
@@ -767,6 +796,18 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.show(backFragment);
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
+        } else if(!list.isEmpty()) {
+            final BaseManagerFragment backFragment = list.get(list.size() - 1);
+
+            fragmentTransaction.hide(backFragment);
+            fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
+            fragmentTransaction.commit();
+
+            nextFragment.setOnCreatedViewListener(v -> {
+                backFragment.onHide(OnHideMode.ON_START_NEW);
+                nextFragment.onShow(OnShowMode.ON_CREATE);
+                nextFragment.setOnCreatedViewListener(null);
+            });
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();

@@ -37,21 +37,10 @@ public class BlankFragment11 extends BaseManagerFragment {
         view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                startFragmentForObservable(new Intent(getContext(), BlankFragment12.class))
-//                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
-//                                       @Override
-//                                       public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
-//                                           System.out.println("onResult: " + integerBundleTuple2.toString());
-//                                       }
-//                                   },
-//                                new Action1<Throwable>() {
-//                                    @Override
-//                                    public void call(Throwable throwable) {
-//                                        throwable.printStackTrace();
-//                                    }
-//                                });
                 StartBuilder.builder(new Intent(getContext(), BlankFragment12.class))
                         .withEnableAnimation(true)
+                        .withEnterAnim(R.anim.fragment_left_enter)
+                        .withExitAnim(R.anim.fragment_left_exit)
                         .start(BlankFragment11.this);
             }
         });
