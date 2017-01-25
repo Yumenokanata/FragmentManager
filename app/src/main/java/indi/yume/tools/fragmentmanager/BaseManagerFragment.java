@@ -166,7 +166,7 @@ public abstract class BaseManagerFragment extends Fragment {
         return (BaseFragmentManagerActivity) getActivity();
     }
 
-    public boolean isTopOfStack() {
+    public boolean isStackSingle() {
         return getManagerActivity().getCurrentStackSize() <= 1;
     }
 

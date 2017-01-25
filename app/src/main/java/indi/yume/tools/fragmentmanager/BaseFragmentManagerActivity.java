@@ -777,6 +777,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
                 @Override
                 public void onCreatedView(View view) {
+                    backFragment.onHide(OnHideMode.ON_START_NEW_AFTER_ANIM);
                     nextFragment.onShow(OnShowMode.ON_CREATE);
                     startAnimation(anim.getEnterAnim(),
                             view,
