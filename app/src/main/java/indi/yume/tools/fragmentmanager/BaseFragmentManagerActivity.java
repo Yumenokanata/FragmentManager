@@ -777,6 +777,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
                 @Override
                 public void onCreatedView(View view) {
+                    nextFragment.onShow(OnShowMode.ON_CREATE);
                     startAnimation(anim.getEnterAnim(),
                             view,
                             new Action0() {
@@ -796,7 +797,6 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.show(backFragment);
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
-            nextFragment.onShow(OnShowMode.ON_CREATE);
         } else if(!list.isEmpty()) {
             final BaseManagerFragment backFragment = list.get(list.size() - 1);
 
