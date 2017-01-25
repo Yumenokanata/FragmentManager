@@ -786,7 +786,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                                             .hide(backFragment)
                                             .commit();
                                     backFragment.onHide(OnHideMode.ON_START_NEW);
-                                    nextFragment.onShow(OnShowMode.ON_CREATE);
+                                    nextFragment.onShow(OnShowMode.ON_CREATE_AFTER_ANIM);
                                     nextFragment.setOnCreatedViewListener(null);
                                 }
                             });
@@ -796,6 +796,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.show(backFragment);
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
+            nextFragment.onShow(OnShowMode.ON_CREATE);
         } else if(!list.isEmpty()) {
             final BaseManagerFragment backFragment = list.get(list.size() - 1);
 

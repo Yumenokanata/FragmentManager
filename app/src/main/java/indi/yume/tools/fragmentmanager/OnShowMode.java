@@ -7,19 +7,21 @@ import java.lang.annotation.RetentionPolicy;
 
 import static indi.yume.tools.fragmentmanager.OnShowMode.ON_BACK;
 import static indi.yume.tools.fragmentmanager.OnShowMode.ON_CREATE;
+import static indi.yume.tools.fragmentmanager.OnShowMode.ON_CREATE_AFTER_ANIM;
 import static indi.yume.tools.fragmentmanager.OnShowMode.ON_RESUME;
 import static indi.yume.tools.fragmentmanager.OnShowMode.ON_SWITCH;
 
 /**
  * Created by yume on 16-8-22.
  */
-@IntDef({ON_RESUME, ON_BACK, ON_SWITCH, ON_CREATE})
+@IntDef({ON_RESUME, ON_BACK, ON_SWITCH, ON_CREATE, ON_CREATE_AFTER_ANIM})
 @Retention(RetentionPolicy.SOURCE)
 public @interface OnShowMode {
     int ON_RESUME = 0x11;
     int ON_BACK = 0x22;
     int ON_SWITCH = 0x33;
     int ON_CREATE = 0x44;
+    int ON_CREATE_AFTER_ANIM = 0x55;
 
     public static class Util{
         public static String toString(@OnShowMode int showMode) {
@@ -32,6 +34,8 @@ public @interface OnShowMode {
                     return "onSwitch";
                 case ON_CREATE:
                     return "onCreate";
+                case ON_CREATE_AFTER_ANIM:
+                    return "onCreateAfterAnim";
                 default:
                     return "None";
             }
