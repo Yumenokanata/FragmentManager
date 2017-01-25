@@ -48,6 +48,8 @@ public abstract class BaseManagerFragment extends Fragment {
 
     private OnCreatedViewListener onCreatedViewListener;
 
+    private volatile boolean isShow = false;
+
     @Getter(lazy = true)
     private final AnimData intentAnim = genIntentAnim();
 
@@ -327,7 +329,14 @@ public abstract class BaseManagerFragment extends Fragment {
             onCreatedViewListener.onCreatedView(view);
     }
 
-    protected void onHide(@OnHideMode int hideMode){ }
+    public boolean isShow() {
+        return isShow;
+    }
+
+    @CallSuper
+    protected void onHide(@OnHideMode int hideMode){
+        isShow = false;
+    }
 
     /**
      * start new fragment -> OnShowMode: onCreate
@@ -339,7 +348,10 @@ public abstract class BaseManagerFragment extends Fragment {
      *
      * @param callMode: onCreate, onResume, onBack and onSwitch
      */
-    protected void onShow(@OnShowMode int callMode){ }
+    @CallSuper
+    protected void onShow(@OnShowMode int callMode){
+        isShow = true;
+    }
 
     protected void preBackResultData(){ }
 
