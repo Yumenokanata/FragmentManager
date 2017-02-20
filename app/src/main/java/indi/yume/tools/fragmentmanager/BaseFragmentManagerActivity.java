@@ -662,6 +662,18 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 }
     }
 
+    public void removeFragmentWithoutAnim(BaseManagerFragment fragment){
+        for(String key : fragmentMap.keySet())
+            for(BaseManagerFragment f : fragmentMap.get(key))
+                if(f == fragment) {
+                    fragmentManager.beginTransaction()
+                            .remove(fragment)
+                            .commit();
+                    fragmentMap.get(key).remove(f);
+                    return;
+                }
+    }
+
     public void removeFragmentWithoutAnim(String tag) {
         List<BaseManagerFragment> list = fragmentMap.get(tag);
         if(list.size() <= 1) {

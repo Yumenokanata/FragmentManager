@@ -416,6 +416,11 @@ public abstract class BaseManagerFragment extends Fragment {
         ((BaseFragmentManagerActivity)getActivity()).removeFragment(this);
     }
 
+    public void finishWithoutAnim(){
+        checkThread();
+        ((BaseFragmentManagerActivity)getActivity()).removeFragmentWithoutAnim(this);
+    }
+
     interface OnCreatedViewListener {
         void onCreatedView(View view);
     }
