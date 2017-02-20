@@ -421,6 +421,10 @@ public abstract class BaseManagerFragment extends Fragment {
         ((BaseFragmentManagerActivity)getActivity()).removeFragmentWithoutAnim(this);
     }
 
+    public boolean isTopOfStack() {
+        return getManagerActivity().isTopOfStack(this);
+    }
+
     interface OnCreatedViewListener {
         void onCreatedView(View view);
     }

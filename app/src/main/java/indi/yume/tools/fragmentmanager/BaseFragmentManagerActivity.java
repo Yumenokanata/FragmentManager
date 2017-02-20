@@ -26,6 +26,7 @@ import rx.functions.Action0;
 
 import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_ANIM_DATA;
 import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_REQUEST_CODE;
+import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_STACK_TAG;
 import static indi.yume.tools.fragmentmanager.Utils.checkThread;
 
 /**
@@ -337,6 +338,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             if(requestCode != -1)
                 intent.putExtra(INTENT_KEY_REQUEST_CODE, requestCode);
             intent.putExtra(INTENT_KEY_ANIM_DATA, anim);
+            getIntent().putExtra(INTENT_KEY_STACK_TAG,
+                    fragment.getStackTag() == null ? getCurrentStackTag() : fragment.getStackTag());
 
             fragment.setIntent(intent);
             addToStack(fragment, clearCurrentStack, anim);
@@ -608,6 +611,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             BaseManagerFragment fragment = getFragmentByClass(baseFragmentMap.get(tag));
             if (fragment == null)
                 throw new Error("baseFragmentMap [BaseFragmentWithTag()] has wrong");
+            getIntent().putExtra(INTENT_KEY_STACK_TAG, tag);
             fragment.setIntent(getIntent());
             fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());
             list.add(fragment);
@@ -666,12 +670,17 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         for(String key : fragmentMap.keySet())
             for(BaseManagerFragment f : fragmentMap.get(key))
                 if(f == fragment) {
-                    fragmentManager.beginTransaction()
-                            .remove(fragment)
-                            .commit();
-                    fragmentMap.get(key).remove(f);
+                    removeFragmentWithoutAnim(key);
                     return;
                 }
+    }
+
+    public boolean isTopOfStack(BaseManagerFragment fragment) {
+        for(List<BaseManagerFragment> stack : fragmentMap.values())
+            if(!stack.isEmpty() && stack.get(stack.size() - 1) == fragment)
+                return true;
+
+        return false;
     }
 
     public void removeFragmentWithoutAnim(String tag) {
