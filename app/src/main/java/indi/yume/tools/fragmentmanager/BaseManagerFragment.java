@@ -88,7 +88,7 @@ public abstract class BaseManagerFragment extends Fragment {
     AnimData genIntentAnim() {
         Intent intent = getIntent();
         if(intent != null) {
-            return intent.getParcelableExtra(INTENT_KEY_ANIM_DATA);
+            return (AnimData) intent.getSerializableExtra(INTENT_KEY_ANIM_DATA);
         }
         return null;
     }
