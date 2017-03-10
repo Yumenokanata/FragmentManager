@@ -657,6 +657,16 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                             && f == fragmentMap.get(key).get(fragmentMap.get(key).size() - 1)) {
                         removeFragmentWithAnim(currentStackTag);
                     } else {
+                        int preIndex;
+                        if ((preIndex = fragmentMap.get(key).indexOf(f) - 1) >= 0) {
+                            BaseManagerFragment fragment1 = fragmentMap.get(key).get(preIndex);
+                            fragment.preBackResultData();
+                            if(fragment.getRequestCode() != -1)
+                                fragment1.onFragmentResult(fragment.getRequestCode(),
+                                        fragment.getResultCode(),
+                                        fragment.getResultData());
+                        }
+
                         fragmentManager.beginTransaction()
                                 .remove(fragment)
                                 .commit();
