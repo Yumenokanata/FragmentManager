@@ -16,7 +16,7 @@ import rx.Observable;
  */
 @AllArgsConstructor
 @Data
-public class RxStarBuilder {
+public class RxStartBuilder {
     protected final Intent intent;
     @Wither protected boolean checkThrottle = false;
     @Wither protected boolean enableAnimation = true;
@@ -25,15 +25,15 @@ public class RxStarBuilder {
     @Wither @AnimRes protected int exitAnim = -1;
     @Wither @AnimRes protected int stayAnim = R.anim.stay_anim;
 
-    protected RxStarBuilder(Intent intent) {
+    protected RxStartBuilder(Intent intent) {
         this.intent = intent;
     }
 
-    public static RxStarBuilder builder(Intent intent) {
-        return new RxStarBuilder(intent);
+    public static RxStartBuilder builder(Intent intent) {
+        return new RxStartBuilder(intent);
     }
 
-    public RxStarBuilder withAnimData(@Nullable AnimData anim) {
+    public RxStartBuilder withAnimData(@Nullable AnimData anim) {
         if(anim == null)
             return this;
 

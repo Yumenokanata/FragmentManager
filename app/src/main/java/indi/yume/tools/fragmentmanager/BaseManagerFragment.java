@@ -2,7 +2,6 @@ package indi.yume.tools.fragmentmanager;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Looper;
 import android.support.annotation.AnimRes;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
@@ -15,12 +14,8 @@ import java.util.Map;
 import java.util.Random;
 
 import indi.yume.tools.renderercalendar.R;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.experimental.Wither;
 import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
@@ -271,7 +266,7 @@ public abstract class BaseManagerFragment extends Fragment {
                 .withEnableAnimation(withAnimation));
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startForObservable(RxStarBuilder builder) {
+    public Observable<Tuple2<Integer, Bundle>> startForObservable(RxStartBuilder builder) {
         final Intent intent = builder.getIntent();
         boolean checkThrottle = builder.isCheckThrottle();
         boolean enableAnimation = builder.isEnableAnimation();
@@ -303,7 +298,7 @@ public abstract class BaseManagerFragment extends Fragment {
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent,
                                                                           boolean withAnimation) {
-        return startForObservable(RxStarBuilder.builder(intent).withEnableAnimation(withAnimation));
+        return startForObservable(RxStartBuilder.builder(intent).withEnableAnimation(withAnimation));
     }
 
     public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
@@ -316,7 +311,7 @@ public abstract class BaseManagerFragment extends Fragment {
             Intent intent,
             Class<? extends SingleBaseActivity> activityClazz,
             boolean withAnimation){
-        return startForObservable(RxStarBuilder.builder(intent)
+        return startForObservable(RxStartBuilder.builder(intent)
                 .withNewActivity(activityClazz)
                 .withEnableAnimation(withAnimation));
     }
