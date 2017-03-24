@@ -281,6 +281,7 @@ public abstract class BaseManagerFragment extends Fragment {
             start(StartBuilder.builder(intent)
                     .withNewActivity(newActivity)
                     .withRequestCode(requestCode1)
+                    .withCheckThrottle(false)
                     .withAnimData(anim));
             onResultSubject.subscribe(
                     tuple -> {
