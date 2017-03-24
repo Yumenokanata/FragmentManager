@@ -11,6 +11,8 @@ import lombok.Data;
 import lombok.experimental.Wither;
 import rx.Observable;
 
+import static indi.yume.tools.fragmentmanager.ThrottleUtil.isThrottleOpen;
+
 /**
  * Created by yume on 17-1-20.
  */
@@ -18,7 +20,7 @@ import rx.Observable;
 @Data
 public class RxStartBuilder {
     protected final Intent intent;
-    @Wither protected boolean checkThrottle = false;
+    @Wither protected boolean checkThrottle = isThrottleOpen();
     @Wither protected boolean enableAnimation = true;
     @Wither protected Class<? extends SingleBaseActivity> newActivity;
     @Wither @AnimRes protected int enterAnim = -1;

@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Wither;
 
+import static indi.yume.tools.fragmentmanager.ThrottleUtil.isThrottleOpen;
+
 /**
  * Created by yume on 16-12-20.
  */
@@ -18,7 +20,7 @@ public class StartBuilder {
     private final Intent intent;
     @Wither private int requestCode = -1;
     @Wither private boolean clearCurrentStack = false;
-    @Wither private boolean checkThrottle = false;
+    @Wither private boolean checkThrottle = isThrottleOpen();
     @Wither private boolean enableAnimation = true;
     @Wither private Class<? extends SingleBaseActivity> newActivity;
     @Wither @AnimRes private int enterAnim = -1;

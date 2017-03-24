@@ -1,7 +1,7 @@
 package indi.yume.tools.fragmentmanager;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import lombok.experimental.UtilityClass;
@@ -13,6 +13,16 @@ import lombok.experimental.UtilityClass;
 public class ThrottleUtil {
     private static final AtomicLong throttleTime = new AtomicLong(0);
     private static final AtomicLong lastEventTime = new AtomicLong(0);
+
+    private final static AtomicBoolean isThrottleOpen = new AtomicBoolean(false);
+
+    public static void setIsThrottleOpen(boolean isOpen) {
+        isThrottleOpen.set(isOpen);
+    }
+
+    public static boolean isThrottleOpen() {
+        return isThrottleOpen.get();
+    }
 
     static boolean checkEvent() {
         return checkEvent(true);

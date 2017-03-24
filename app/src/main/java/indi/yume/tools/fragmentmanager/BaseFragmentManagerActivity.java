@@ -729,7 +729,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         List<BaseManagerFragment> list = fragmentMap.get(currentStackTag);
-        if(!list.isEmpty()) {
+        if(list != null && !list.isEmpty()) {
             BaseManagerFragment fragment = list.get(list.size() - 1);
             if(fragment.onBackPressed())
                 return;
@@ -746,6 +746,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     private void removeFragmentWithAnim(String tag) {
         List<BaseManagerFragment> list = fragmentMap.get(tag);
+        list = list == null ? new LinkedList<>() : list;
         if(list.size() <= 1) {
             int exitAnim = -1;
             if(list.size() == 1) {
