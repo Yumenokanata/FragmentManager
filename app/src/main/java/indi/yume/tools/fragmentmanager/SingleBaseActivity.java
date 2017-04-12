@@ -16,7 +16,7 @@ public abstract class SingleBaseActivity extends BaseFragmentManagerActivity {
     private Map<String, Class<? extends BaseManagerFragment>> map = new HashMap<>();
 
     @Override
-    public Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag() {
+    public Map<String, Class<? extends BaseManagerFragment>> baseFragmentWithTag() {
         return map;
     }
 

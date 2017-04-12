@@ -11,8 +11,7 @@ import android.widget.Toast;
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
-import indi.yume.tools.fragmentmanager.RxStarBuilder;
-import indi.yume.tools.fragmentmanager.StartBuilder;
+import indi.yume.tools.fragmentmanager.RxStartBuilder;
 import indi.yume.tools.fragmentmanager.Tuple2;
 import rx.functions.Action1;
 
@@ -60,7 +59,7 @@ public class BlankFragment21 extends BaseManagerFragment {
 //                                        throwable.printStackTrace();
 //                                    }
 //                                });
-                RxStarBuilder.builder(new Intent(getContext(), BlankFragment22.class))
+                RxStartBuilder.builder(new Intent(getContext(), BlankFragment22.class))
                         .withEnableAnimation(true)
                         .withNewActivity(SingleTagActivity.class)
                         .startForObservable(BlankFragment21.this)

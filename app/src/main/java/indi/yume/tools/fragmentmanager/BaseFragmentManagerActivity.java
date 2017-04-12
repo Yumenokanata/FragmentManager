@@ -58,7 +58,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     public abstract int fragmentViewId();
 
-    public abstract Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag();
+    public abstract Map<String, Class<? extends BaseManagerFragment>> baseFragmentWithTag();
 
     public boolean clearStackWhenStackChanged(String targetTag, String currentTag){
         return false;
@@ -184,9 +184,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         forObservableTag = ActivityForObservableHelper.onCreate(savedInstanceState, this);
         fragmentManager = getSupportFragmentManager();
-        baseFragmentMap = BaseFragmentWithTag();
+        baseFragmentMap = baseFragmentWithTag();
         if(baseFragmentMap == null)
-            throw new Error("BaseFragmentWithTag() must return value");
+            throw new Error("baseFragmentWithTag() must return value");
 
         if(savedInstanceState != null) {
             isStartForResult = savedInstanceState.getBoolean(SAVE_STATE_KEY_IS_START_FOR_RESULT, false);
@@ -487,7 +487,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     private void switchToStackByTag(String tag, boolean clearCurrentStack, boolean forceSwitch){
         if(!baseFragmentMap.containsKey(tag))
-            throw new Error("Tag: " + tag + " not in baseFragmentMap. [BaseFragmentWithTag()]");
+            throw new Error("Tag: " + tag + " not in baseFragmentMap. [baseFragmentWithTag()]");
 
         if((fragmentMap.containsKey(tag) && (forceSwitch || !TextUtils.equals(tag, currentStackTag)))
                 || (!fragmentMap.containsKey(tag) || fragmentMap.get(tag).isEmpty())){
@@ -610,7 +610,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(list.size() == 0) {
             BaseManagerFragment fragment = getFragmentByClass(baseFragmentMap.get(tag));
             if (fragment == null)
-                throw new Error("baseFragmentMap [BaseFragmentWithTag()] has wrong");
+                throw new Error("baseFragmentMap [baseFragmentWithTag()] has wrong");
             getIntent().putExtra(INTENT_KEY_STACK_TAG, tag);
             fragment.setIntent(getIntent());
             fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());

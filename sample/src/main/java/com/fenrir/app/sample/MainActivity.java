@@ -19,7 +19,7 @@ public class MainActivity extends BaseFragmentManagerActivity {
     }
 
     @Override
-    public Map<String, Class<? extends BaseManagerFragment>> BaseFragmentWithTag() {
+    public Map<String, Class<? extends BaseManagerFragment>> baseFragmentWithTag() {
         Map<String, Class<? extends BaseManagerFragment>> map = new HashMap<>();
         map.put("tag1", BlankFragment11.class);
         map.put("tag2", BlankFragment21.class);

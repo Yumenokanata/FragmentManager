@@ -5,11 +5,14 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
-import indi.yume.tools.fragmentmanager.StartBuilder;
+import indi.yume.tools.fragmentmanager.RxStartBuilder;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
+import indi.yume.tools.fragmentmanager.Tuple2;
+import rx.functions.Action1;
 
 /**
  * Created by yume on 16-4-21.
@@ -37,11 +40,17 @@ public class BlankFragment11 extends BaseManagerFragment {
         view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StartBuilder.builder(new Intent(getContext(), BlankFragment12.class))
+                RxStartBuilder.builder(new Intent(getContext(), BlankFragment12.class))
                         .withEnableAnimation(true)
                         .withEnterAnim(R.anim.fragment_left_enter)
                         .withExitAnim(R.anim.fragment_left_exit)
-                        .start(BlankFragment11.this);
+                        .startForObservable(BlankFragment11.this)
+                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
+                                Toast.makeText(getContext(), "Result11", Toast.LENGTH_SHORT).show();
+                            }
+                        });
             }
         });
     }
@@ -56,11 +65,13 @@ public class BlankFragment11 extends BaseManagerFragment {
     protected void onShow(int callMode) {
         super.onShow(callMode);
         System.out.println(this.getClass().getSimpleName() + ": onShow " + OnShowMode.Util.toString(callMode));
+        System.out.println(this.getClass().getSimpleName() + ": isTopOfStack " + isTopOfStack());
     }
 
     @Override
     protected void onHide(int hideMode) {
         super.onHide(hideMode);
         System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.Util.toString(hideMode));
+        System.out.println(this.getClass().getSimpleName() + ": isTopOfStack " + isTopOfStack());
     }
 }

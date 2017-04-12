@@ -1,5 +1,6 @@
 package com.fenrir.app.sample;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,6 +10,7 @@ import android.view.ViewGroup;
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
+import indi.yume.tools.fragmentmanager.StartBuilder;
 import indi.yume.tools.fragmentmanager.SwipeBackLayout;
 
 import static indi.yume.tools.fragmentmanager.SwipeBackUtil.enableSwipeBackAtFragment;
@@ -51,6 +53,13 @@ public class BlankFragment12 extends BaseManagerFragment {
         view.findViewById(R.id.finish_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+//                finishWithoutAnim();
+//                StartBuilder.builder(new Intent(getContext(), BlankFragment12.class))
+//                        .withEnableAnimation(true)
+//                        .withEnterAnim(R.anim.fragment_left_enter)
+//                        .withExitAnim(R.anim.fragment_left_exit)
+//                        .start(BlankFragment12.this);
+                getManagerActivity().switchToStackByTag("tag2");
                 finish();
             }
         });
