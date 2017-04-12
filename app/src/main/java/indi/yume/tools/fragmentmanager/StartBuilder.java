@@ -4,12 +4,10 @@ import android.content.Intent;
 import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 
-import indi.yume.tools.renderercalendar.R;
+import indi.yume.tools.fragmentmanager.model.AnimData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Wither;
-
-import static indi.yume.tools.fragmentmanager.ThrottleUtil.isThrottleOpen;
 
 /**
  * Created by yume on 16-12-20.
@@ -18,14 +16,19 @@ import static indi.yume.tools.fragmentmanager.ThrottleUtil.isThrottleOpen;
 @Data
 public class StartBuilder {
     private final Intent intent;
-    @Wither private int requestCode = -1;
-    @Wither private boolean clearCurrentStack = false;
-    @Wither private boolean checkThrottle = isThrottleOpen();
-    @Wither private boolean enableAnimation = true;
-    @Wither private Class<? extends SingleBaseActivity> newActivity;
-    @Wither @AnimRes private int enterAnim = -1;
-    @Wither @AnimRes private int exitAnim = -1;
-    @Wither @AnimRes private int stayAnim = R.anim.stay_anim;
+    @Wither
+    private int requestCode = -1;
+    @Wither
+    private boolean enableAnimation = true;
+    @Wither
+    @AnimRes
+    private int enterAnim = -1;
+    @Wither
+    @AnimRes
+    private int exitAnim = -1;
+    @Wither
+    @AnimRes
+    private int stayAnim = R.anim.stay_anim;
 
     private StartBuilder(Intent intent) {
         this.intent = intent;
@@ -62,5 +65,50 @@ public class StartBuilder {
 
     public void start(BaseFragmentManagerActivity activity) {
         activity.start(this);
+    }
+
+    //Make for Kotlin
+    public Intent getIntent() {
+        return intent;
+    }
+
+    public int getRequestCode() {
+        return requestCode;
+    }
+
+    public void setRequestCode(int requestCode) {
+        this.requestCode = requestCode;
+    }
+
+    public boolean isEnableAnimation() {
+        return enableAnimation;
+    }
+
+    public void setEnableAnimation(boolean enableAnimation) {
+        this.enableAnimation = enableAnimation;
+    }
+
+    public int getEnterAnim() {
+        return enterAnim;
+    }
+
+    public void setEnterAnim(int enterAnim) {
+        this.enterAnim = enterAnim;
+    }
+
+    public int getExitAnim() {
+        return exitAnim;
+    }
+
+    public void setExitAnim(int exitAnim) {
+        this.exitAnim = exitAnim;
+    }
+
+    public int getStayAnim() {
+        return stayAnim;
+    }
+
+    public void setStayAnim(int stayAnim) {
+        this.stayAnim = stayAnim;
     }
 }

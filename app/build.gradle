@@ -1,4 +1,5 @@
 buildscript {
+    ext.kotlin_version = '1.1.1'
     repositories {
         mavenCentral()
         jcenter()
@@ -7,22 +8,25 @@ buildscript {
     dependencies {
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
         classpath 'me.tatarka:gradle-retrolambda:3.6.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 apply plugin: 'android-apt'
 apply plugin: 'me.tatarka.retrolambda'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    buildToolsVersion "25.0.2"
 
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -30,19 +34,39 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
     compileOptions {
         targetCompatibility 1.8
         sourceCompatibility 1.8
     }
 }
 
+kapt {
+    generateStubs = true
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:25.3.0'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    compile 'io.reactivex.rxjava2:rxjava:2.0.7'
+    compile 'io.reactivex.rxjava2:rxkotlin:2.0.0'
+    compile 'com.github.andrewoma.dexx:collection:0.7'
+
+    compile 'org.slf4j:slf4j-simple:1.7.25'
+
+    kapt "org.projectlombok:lombok:1.16.16"
+    provided "org.projectlombok:lombok:1.16.16"
+
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:25.1.0'
-
-    compile 'io.reactivex:rxjava:1.2.4'
-
-    apt "org.projectlombok:lombok:1.16.10"
-    provided "org.projectlombok:lombok:1.16.10"
+    testCompile "org.functionaljava:functionaljava:4.7"
+    testCompile "org.functionaljava:functionaljava-quickcheck:4.7"
 }

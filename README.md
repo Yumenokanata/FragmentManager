@@ -2,13 +2,26 @@
 
 # FragmentManager
 Fragment切换方法的封装  
-1. 提供多栈管理（官方的fragment是单栈的）  
+1. 提供多栈管理（官方的fragment是单栈的）
 2. 简化Fragment的管理  
 3. 完全模仿Activity的接口方法和回调（如startFragment()、finish()等）  
 4. 通过Intent启动，通过onFragmentResult()方法回调  
 5. 使用Rx的方式启动Fragment: startFragmentForObservable(Intent intent)  
 6. 自定义Fragment切换动画  
 7. (__2.4.0 NEW__)加入侧滑返回
+
+##  3.x版本全新来袭
+3.x版本使用函数式架构完全重构，带来更加优美的新特性
+1. Kotlin实现
+2. 全面升级为RxJava2
+3. 函数式架构，分离副作用，参考Haskell IO设计和Redux架构
+4. 全新的队列处理方式，并具有异常回退功能，全面提供线程安全的运行方式
+5. 全新状态管理方式，带来状态序列化、状态重现等高级特性
+6. 部分实现使用面向组合子设计，灵活清晰
+
+> 注意：3.x版本目前还属于初期开发阶段，很多以前的特性还没有实现，但后续会持续更新并直接维护3.x版本了，接口会尽量保持和老版本相同
+
+> 现在3.x版本只实现了Fragment普通方式启动、ResultData回调、BackPress处理功能，其他如侧滑返回、Rx启动方式、新Activity启动Fragment等高级功能将在后续更新中实现，敬请期待
 
 ## 添加到Android studio
 Step1: 在根build.gradle中添加仓库：
@@ -45,7 +58,7 @@ public class MyActivity extends BaseFragmentManagerActivity {
     //此方法中需返回fragment显示在的View的id
     public int fragmentViewId() { ... }
     //此方法中需要返回多栈的栈名以及所对应的默认Fragment
-    public Map<String, Class<?>> BaseFragmentWithTag() { ... }
+    public Map<String, Class<?>> baseFragmentWithTag() { ... }
 }
 ```
 注：之后可以通过switchToStackByTag(String tag)方法在不同的栈直接进行切换
