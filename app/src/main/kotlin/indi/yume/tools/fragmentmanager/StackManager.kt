@@ -3,6 +3,9 @@ package indi.yume.tools.fragmentmanager
 import android.support.annotation.IdRes
 import indi.yume.tools.fragmentmanager.event.Action
 import indi.yume.tools.fragmentmanager.event.EmptyAction
+import indi.yume.tools.fragmentmanager.event.GenAction
+import indi.yume.tools.fragmentmanager.event.TransactionAction
+import indi.yume.tools.fragmentmanager.functions.ActionTrunk
 import indi.yume.tools.fragmentmanager.model.ManagerState
 import indi.yume.tools.fragmentmanager.model.RealWorld
 import io.reactivex.BackpressureStrategy
@@ -12,6 +15,7 @@ import io.reactivex.subjects.PublishSubject
 import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Created by yume on 17-4-10.
@@ -19,26 +23,15 @@ import java.util.concurrent.TimeUnit
 
 class StackManager(val realWorld: RealWorld) {
 
-    internal val subject = PublishSubject.create<(ManagerState) -> Action>().toSerialized()
+    internal val subject = PublishSubject.create<ActionTrunk>().toSerialized()
 
     init {
         subject.toFlowable(BackpressureStrategy.BUFFER)
                 .observeOn(NewThreadScheduler())
                 .scan<StateData>(StateData(ManagerState.empty(), ManagerState.empty(), EmptyAction()))
                 { stateData, trunk ->
-                    logger.trace("befor current state: {}", stateData)
-
                     try {
-                        val action = trunk(stateData.newState)
-                        val newStateData = StateData(stateData.newState, reduce(stateData.newState, action), action)
-
-                        if(middleware(newStateData.oldState, newStateData.newState, newStateData.event)
-                                .blockingAwait(20, TimeUnit.SECONDS)) {
-                            newStateData
-                        } else {
-                            logger.error("Deal effect event timeout: {}", action)
-                            stateData
-                        }
+                        handAction(stateData, trunk)
                     } catch (e: Exception) {
                         logger.error("Deal event error: ", e)
                         stateData
@@ -49,8 +42,44 @@ class StackManager(val realWorld: RealWorld) {
     }
 
     constructor(activity: BaseFragmentManagerActivity,
-                @IdRes fragmentId: Int) : this(RealWorld(activity, fragmentId,
-            activity.supportFragmentManager)) {
+                @IdRes fragmentId: Int) : this(RealWorld(activity, fragmentId, activity.supportFragmentManager))
+
+    private fun handAction(stateData: StateData, trunk: ActionTrunk): StateData {
+        val (oldState, newState, event) = stateData
+        val action = trunk(newState)
+
+        return when(action) {
+            is TransactionAction -> {
+                var newS = stateData
+                for (act in action.list)
+                    newS = handAction(newS, act)
+                newS
+            }
+            is GenAction -> {
+                var act = action.initAction
+                var newS = stateData
+                do {
+                    newS = handAction(newS, act)
+                    act = action.generator(newS.newState, newS.event)
+                            ?.let { { _: ManagerState -> it } } ?: break
+                } while (true)
+                newS
+            }
+            else -> {
+                logger.trace("befor current state: {}", newState)
+                logger.trace("do action {}", action)
+
+                val newStateData = StateData(newState, reduce(newState, action), action)
+
+                if(middleware(newStateData.oldState, newStateData.newState, newStateData.event)
+                        .blockingAwait(100, TimeUnit.SECONDS)) {
+                    newStateData
+                } else {
+                    throw TimeoutException("Deal effect event timeout: ${action}")
+                    stateData
+                }
+            }
+        }
     }
 
     private fun reduce(oldState: ManagerState, action: Action): ManagerState {
@@ -62,10 +91,10 @@ class StackManager(val realWorld: RealWorld) {
     }
 
     fun dispatch(action: Action) {
-        subject.onNext { action }
+        dispatch { action }
     }
 
-    fun dispatch(trunk: (ManagerState) -> Action) {
+    fun dispatch(trunk: ActionTrunk) {
         subject.onNext(trunk)
     }
 

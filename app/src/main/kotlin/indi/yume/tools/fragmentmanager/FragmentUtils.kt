@@ -3,7 +3,6 @@ package indi.yume.tools.fragmentmanager
 import android.content.Intent
 import android.graphics.Color
 import android.support.annotation.AnimRes
-import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentTransaction
 import android.view.View
@@ -39,6 +38,7 @@ fun commit(manager: FragmentManager, func: (FragmentTransaction) -> Completable)
                     Completable.error(e)
                 }
             }
+            .subscribeOn(AndroidSchedulers.mainThread())
 }
 
 fun onResume(): IO<(FragmentItem) -> Unit> =
@@ -72,7 +72,7 @@ fun removeFragmentWithAnim(
             if(backItem != null)
                 transaction.show(backItem.fragment)
 
-            startAnimation(animData.getExitAnim())(realworld)
+            startAnimation(animData.exitAnim)(realworld)
                     .second(foreItem.fragment.view!!)
                     .doOnSubscribe { dis ->
                         if (backItem != null
@@ -83,6 +83,7 @@ fun removeFragmentWithAnim(
                                     foreState.resultData)
                     }
                     .doOnComplete {
+                        realworld.fragmentCollection -= foreItem.hashTag
                         realworld.fragmentManager.beginTransaction()
                                 .remove(foreItem.fragment)
                                 .commit()
@@ -100,23 +101,21 @@ fun removeFragmentNoAnim(
 
     return state { realworld ->
         state { transaction ->
-            Completable.create { e ->
-                if (backItem != null
-                        && foreState.requestCode != -1
-                        && foreState.isBackItem(backState))
-                    backItem.onFragmentResult(foreState.requestCode,
-                            foreState.resultCode,
-                            foreState.resultData)
+            if (backItem != null
+                    && foreState.requestCode != -1
+                    && foreState.isBackItem(backState))
+                backItem.onFragmentResult(foreState.requestCode,
+                        foreState.resultCode,
+                        foreState.resultData)
 
-                if (backItem != null)
-                    transaction.show(backItem.fragment)
-                transaction.remove(foreItem.fragment)
+            if (backItem != null)
+                transaction.show(backItem.fragment)
+            transaction.remove(foreItem.fragment)
 
-                realworld.fragmentCollection -= foreItem.hashTag
-                backItem?.onShow(OnShowMode.OnBack)
+            realworld.fragmentCollection -= foreItem.hashTag
+            backItem?.onShow(OnShowMode.OnBack)
 
-                e.onComplete()
-            }
+            Completable.complete()
         }
     }
 }
@@ -164,21 +163,36 @@ fun showFragmentNoAnim(
         backItem: FragmentItem): IO<State<FragmentTransaction, Completable>> {
     return state { _ ->
         state { transaction ->
-            Completable.create { e ->
-                transaction.hide(backItem.fragment)
-                transaction.show(foreItem.fragment)
+            transaction.hide(backItem.fragment)
+            transaction.show(foreItem.fragment)
 
-                foreItem.controller.bind(ViewCreated::class.java)
-                        .firstElement()
-                        .subscribe { _ ->
-                            backItem.onHide(OnHideMode.OnStartNew)
-                            foreItem.onShow(OnShowMode.OnCreate)
-                            e.onComplete()
-                        }
-            }
+            showCallback(foreItem, backItem)
         }
     }
 }
+
+fun showFragmentNoAnim(
+        foreItem: FragmentItem): IO<State<FragmentTransaction, Completable>> {
+    return state { _ ->
+        state { transaction ->
+            transaction.show(foreItem.fragment)
+            showCallback(foreItem)
+        }
+    }
+}
+
+fun showCallback(foreItem: FragmentItem, backItem: FragmentItem? = null): Completable =
+        Completable.create { e ->
+            foreItem.controller.bind(ViewCreated::class.java)
+                    .firstElement()
+                    .subscribe({ _ ->
+                        backItem?.onHide(OnHideMode.OnStartNew)
+                        foreItem.onShow(OnShowMode.OnCreate)
+                        e.onComplete()
+                    }, {
+                        e.onError(it)
+                    })
+        }
 
 fun switchTag(
         foreItem: FragmentItem?,
@@ -196,24 +210,6 @@ fun switchTag(
                         backItem?.onHide(OnHideMode.OnSwitch)
                         foreItem?.onShow(OnShowMode.OnSwitch)
                     }
-        }
-    }
-}
-
-fun showFragmentNoAnim(
-        foreItem: FragmentItem): IO<State<FragmentTransaction, Completable>> {
-    return state { _ ->
-        state { transaction ->
-            Completable.create { e ->
-                transaction.show(foreItem.fragment)
-
-                foreItem.controller.bind(ViewCreated::class.java)
-                        .firstElement()
-                        .subscribe { _ ->
-                            foreItem.onShow(OnShowMode.OnCreate)
-                            e.onComplete()
-                        }
-            }
         }
     }
 }

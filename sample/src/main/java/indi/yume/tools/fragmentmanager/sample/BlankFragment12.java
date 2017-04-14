@@ -7,10 +7,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.jetbrains.annotations.NotNull;
+
+import indi.yume.tools.fragmentmanager.ActionUtilKt;
 import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.StackManager;
 import indi.yume.tools.fragmentmanager.StartBuilder;
 import indi.yume.tools.fragmentmanager.anno.OnHideMode;
 import indi.yume.tools.fragmentmanager.anno.OnShowMode;
+import indi.yume.tools.fragmentmanager.event.Action;
+import indi.yume.tools.fragmentmanager.event.CallbackAction;
+import indi.yume.tools.fragmentmanager.model.ManagerState;
+import indi.yume.tools.fragmentmanager.model.RealWorld;
+import io.reactivex.Completable;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
 
 /**
  * Created by yume on 16-4-21.

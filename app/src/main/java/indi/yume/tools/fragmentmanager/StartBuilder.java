@@ -34,6 +34,12 @@ public class StartBuilder {
         this.intent = intent;
     }
 
+    public StartBuilder(Intent intent, int requestCode, boolean enableAnimation) {
+        this.intent = intent;
+        this.requestCode = requestCode;
+        this.enableAnimation = enableAnimation;
+    }
+
     public static StartBuilder builder(Intent intent) {
         return new StartBuilder(intent);
     }

@@ -83,6 +83,6 @@ data class ManagerState(
     }
 
     companion object {
-        fun empty(): ManagerState = ManagerState(emptyMap<String, List<ItemState>>(), null)
+        @JvmStatic fun empty(): ManagerState = ManagerState(emptyMap<String, List<ItemState>>(), null)
     }
 }
