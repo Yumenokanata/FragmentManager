@@ -37,7 +37,12 @@ allprojects {
 Step2: 在工程中添加依赖：
 ```groovy
 dependencies {
-    compile 'com.github.Yumenokanata:FragmentManager:x.y.z'
+    // 2.x
+    compile 'com.github.Yumenokanata:FragmentManager:2.6.1'
+    // 3.x
+    compile 'com.github.Yumenokanata:FragmentManager:3.0-RC1'
+    // SNAPSHOT
+    compile 'com.github.Yumenokanata:FragmentManager:master-SNAPSHOT'
 }
 ```
 
