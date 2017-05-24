@@ -13,7 +13,8 @@ import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
 import indi.yume.tools.fragmentmanager.RxStartBuilder;
 import indi.yume.tools.fragmentmanager.Tuple2;
-import rx.functions.Action1;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by yume on 16-4-21.
@@ -63,9 +64,9 @@ public class BlankFragment21 extends BaseManagerFragment {
                         .withEnableAnimation(true)
                         .withNewActivity(SingleTagActivity.class)
                         .startForObservable(BlankFragment21.this)
-                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                        .subscribe(new Consumer<Tuple2<Integer,Bundle>>() {
                             @Override
-                            public void call(Tuple2<Integer, Bundle> t) {
+                            public void accept(@NonNull Tuple2<Integer, Bundle> t) throws Exception {
                                 Toast.makeText(context, t.getData2().getString("result"), Toast.LENGTH_LONG).show();
                             }
                         });
@@ -77,15 +78,15 @@ public class BlankFragment21 extends BaseManagerFragment {
                     public void onClick(View v) {
                         startActivityForObservable(
                                 new Intent(getContext(), ForObserableActivity.class))
-                                .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                                .subscribe(new Consumer<Tuple2<Integer,Bundle>>() {
                                                @Override
-                                               public void call(Tuple2<Integer, Bundle> event) {
+                                               public void accept(@NonNull Tuple2<Integer, Bundle> event) throws Exception {
                                                    Toast.makeText(context, event.getData2().getString("result"), Toast.LENGTH_LONG).show();
                                                }
                                            },
-                                        new Action1<Throwable>() {
+                                        new Consumer<Throwable>() {
                                             @Override
-                                            public void call(Throwable throwable) {
+                                            public void accept(@NonNull Throwable throwable) throws Exception {
                                                 throwable.printStackTrace();
                                             }
                                         });

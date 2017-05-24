@@ -41,7 +41,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:25.1.0'
 
-    compile 'io.reactivex:rxjava:1.2.4'
+    compile "io.reactivex.rxjava2:rxjava:2.1.0"
 
     apt "org.projectlombok:lombok:1.16.10"
     provided "org.projectlombok:lombok:1.16.10"

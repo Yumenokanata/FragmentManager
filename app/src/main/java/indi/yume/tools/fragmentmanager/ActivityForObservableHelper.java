@@ -8,13 +8,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 import lombok.Data;
 import lombok.experimental.UtilityClass;
-import rx.Observable;
-import rx.Subscriber;
-import rx.subjects.PublishSubject;
-import rx.subjects.SerializedSubject;
-import rx.subjects.Subject;
 
 /**
  * Created by yume on 16-8-8.
@@ -49,29 +50,32 @@ public class ActivityForObservableHelper {
 
     public static void onDestroy(String tag) {
         if(savedInstanceStateMap.containsKey(tag))
-            if(!savedInstanceStateMap.get(tag).isHasSaveSate())
+            if(!savedInstanceStateMap.get(tag).isHasSaveSate()) {
                 savedInstanceStateMap.remove(tag);
-            else
+            } else {
                 savedInstanceStateMap.get(tag).setHasSaveSate(false);
+            }
     }
 
-    public static Observable<Tuple2<Integer, Bundle>> startActivityForObservable(String tag, Activity activity, Intent intent) {
+    public static Single<Tuple2<Integer, Bundle>> startActivityForObservable(String tag, Activity activity, Intent intent) {
         final ResultData resultData = savedInstanceStateMap.get(tag);
         if(resultData == null)
-            return Observable.error(new RuntimeException("Do not have this Activity state: tag=" + tag));
+            return Single.error(new RuntimeException("Do not have this Activity state: tag=" + tag));
 
-        return Observable.create(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
+        return Single.create(new SingleOnSubscribe<Tuple2<Integer, Bundle>>() {
             @Override
-            public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
+            public void subscribe(@NonNull SingleEmitter<Tuple2<Integer, Bundle>> emitter) throws Exception {
                 final int requestCode = random.nextInt() & 0x0000ffff;
                 activity.startActivityForResult(intent, requestCode);
-                resultData.getOnResultSubject().subscribe(
-                        tuple -> {
-                            if (requestCode == tuple.getData1())
-                                sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                            sub.onCompleted();
-                        },
-                        sub::onError);
+                resultData.getOnResultSubject().firstOrError()
+                        .subscribe(tuple -> {
+                                    if (requestCode == tuple.getData1())
+                                        emitter.onSuccess(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                    else
+                                        emitter.onError(new RuntimeException(intent.getComponent().getClassName()
+                                                + " has error requestCode: " + requestCode + " != " + tuple.getData1()));
+                                },
+                                emitter::onError);
             }
         });
     }
@@ -85,14 +89,14 @@ public class ActivityForObservableHelper {
 
 @Data
 class ResultData{
-    private final Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>> onResultSubject;
+    private final Subject<Tuple3<Integer, Integer, Bundle>> onResultSubject;
     private boolean hasSaveSate = false;
 
     ResultData() {
-        onResultSubject = new SerializedSubject<>(PublishSubject.<Tuple3<Integer, Integer, Bundle>>create());
+        onResultSubject = PublishSubject.<Tuple3<Integer, Integer, Bundle>>create().toSerialized();
     }
 
-    ResultData(Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>> onResultSubject) {
+    ResultData(Subject<Tuple3<Integer, Integer, Bundle>> onResultSubject) {
         this.onResultSubject = onResultSubject;
     }
 }

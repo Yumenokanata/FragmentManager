@@ -14,11 +14,10 @@ import java.util.Map;
 import java.util.Random;
 
 import indi.yume.tools.renderercalendar.R;
+import io.reactivex.Single;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 import lombok.Getter;
-import rx.Observable;
-import rx.subjects.PublishSubject;
-import rx.subjects.SerializedSubject;
-import rx.subjects.Subject;
 
 import static indi.yume.tools.fragmentmanager.Utils.checkThread;
 
@@ -72,7 +71,7 @@ public abstract class BaseManagerFragment extends Fragment {
     private int resultCode = -1;
     private Bundle resultData = null;
 
-    private Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>> onResultSubject;
+    private Subject<Tuple3<Integer, Integer, Bundle>> onResultSubject;
 
     public BaseManagerFragment() {
         super();
@@ -101,12 +100,12 @@ public abstract class BaseManagerFragment extends Fragment {
 
             Object subject = savedInstanceStateMap.remove(hashTag);
             if(subject != null) {
-                onResultSubject = (Subject<Tuple3<Integer, Integer, Bundle>, Tuple3<Integer, Integer, Bundle>>) subject;
+                onResultSubject = (Subject<Tuple3<Integer, Integer, Bundle>>) subject;
             }
         }
 
         if(onResultSubject == null)
-            onResultSubject = new SerializedSubject<>(PublishSubject.<Tuple3<Integer, Integer, Bundle>>create());
+            onResultSubject = PublishSubject.<Tuple3<Integer, Integer, Bundle>>create().toSerialized();
     }
 
     protected String setDefaultStackTag(){
@@ -167,7 +166,7 @@ public abstract class BaseManagerFragment extends Fragment {
         return getManagerActivity().getCurrentStackSize() <= 1;
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
+    public Single<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
         return getManagerActivity().startActivityForObservable(intent);
     }
 
@@ -266,14 +265,14 @@ public abstract class BaseManagerFragment extends Fragment {
                 .withEnableAnimation(withAnimation));
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startForObservable(RxStartBuilder builder) {
+    public Single<Tuple2<Integer, Bundle>> startForObservable(RxStartBuilder builder) {
         final Intent intent = builder.getIntent();
         boolean checkThrottle = builder.isCheckThrottle();
         boolean enableAnimation = builder.isEnableAnimation();
         Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
         AnimData anim = enableAnimation ? builder.getAnim() : null;
 
-        return Observable.create(sub -> {
+        return Single.create(emitter -> {
             if(checkThrottle && !ThrottleUtil.checkEvent())
                 throw new ThrottleException();
 
@@ -283,32 +282,34 @@ public abstract class BaseManagerFragment extends Fragment {
                     .withRequestCode(requestCode1)
                     .withCheckThrottle(false)
                     .withAnimData(anim));
-            onResultSubject.subscribe(
-                    tuple -> {
-                        if (requestCode1 == tuple.getData1())
-                            sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                        sub.onCompleted();
-                    },
-                    sub::onError);
+            onResultSubject.firstOrError()
+                    .subscribe(tuple -> {
+                                if (requestCode1 == tuple.getData1())
+                                    emitter.onSuccess(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                else
+                                    emitter.onError(new RuntimeException(getClass().getSimpleName()
+                                            + " has error requestCode: " + requestCode1 + " != " + tuple.getData1()));
+                            },
+                            emitter::onError);
         });
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
+    public Single<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent) {
         return startFragmentForObservable(intent, true);
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent,
+    public Single<Tuple2<Integer, Bundle>> startFragmentForObservable(final Intent intent,
                                                                           boolean withAnimation) {
         return startForObservable(RxStartBuilder.builder(intent).withEnableAnimation(withAnimation));
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
+    public Single<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
             Intent intent,
             Class<? extends SingleBaseActivity> activityClazz){
         return startFragmentOnNewActivityForObservable(intent, activityClazz, true);
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
+    public Single<Tuple2<Integer, Bundle>> startFragmentOnNewActivityForObservable(
             Intent intent,
             Class<? extends SingleBaseActivity> activityClazz,
             boolean withAnimation){

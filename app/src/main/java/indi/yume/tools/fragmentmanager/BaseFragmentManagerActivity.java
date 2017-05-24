@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import indi.yume.tools.renderercalendar.R;
-import rx.Observable;
-import rx.functions.Action0;
+import io.reactivex.Single;
 
 import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_ANIM_DATA;
 import static indi.yume.tools.fragmentmanager.BaseManagerFragment.INTENT_KEY_REQUEST_CODE;
@@ -400,9 +399,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 .withAnimData(withAnimation ? defaultAnimData() : null));
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
+    public Single<Tuple2<Integer, Bundle>> startActivityForObservable(Intent intent) {
         if(!ThrottleUtil.checkEvent())
-            return Observable.error(new ThrottleException());
+            return Single.error(new ThrottleException());
 
         return ActivityForObservableHelper.startActivityForObservable(forObservableTag, this, intent);
     }
@@ -785,9 +784,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
                 startAnimation(exitAnim,
                         fragment.getView(),
-                        new Action0() {
+                        new Runnable() {
                             @Override
-                            public void call() {
+                            public void run() {
                                 fragmentManager.beginTransaction()
                                         .remove(fragment)
                                         .commit();
@@ -813,9 +812,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                     nextFragment.onShow(OnShowMode.ON_CREATE);
                     startAnimation(anim.getEnterAnim(),
                             view,
-                            new Action0() {
+                            new Runnable() {
                                 @Override
-                                public void call() {
+                                public void run() {
                                     fragmentManager.beginTransaction()
                                             .hide(backFragment)
                                             .commit();
@@ -850,7 +849,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         list.add(nextFragment);
     }
 
-    private void startAnimation(@AnimRes int animRes, View view, final Action0 doOnOver) {
+    private void startAnimation(@AnimRes int animRes, View view, final Runnable doOnOver) {
         if(view.getBackground() == null)
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.white));
 
@@ -863,7 +862,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                doOnOver.call();
+                doOnOver.run();
             }
 
             @Override

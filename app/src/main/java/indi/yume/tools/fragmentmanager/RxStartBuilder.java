@@ -6,10 +6,10 @@ import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 
 import indi.yume.tools.renderercalendar.R;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Wither;
-import rx.Observable;
 
 import static indi.yume.tools.fragmentmanager.ThrottleUtil.isThrottleOpen;
 
@@ -56,7 +56,7 @@ public class RxStartBuilder {
                 .build();
     }
 
-    public Observable<Tuple2<Integer, Bundle>> startForObservable(BaseManagerFragment fragment) {
+    public Single<Tuple2<Integer, Bundle>> startForObservable(BaseManagerFragment fragment) {
         return fragment.startForObservable(this);
     }
 }

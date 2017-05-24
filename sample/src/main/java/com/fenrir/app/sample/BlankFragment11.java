@@ -12,7 +12,8 @@ import indi.yume.tools.fragmentmanager.RxStartBuilder;
 import indi.yume.tools.fragmentmanager.OnHideMode;
 import indi.yume.tools.fragmentmanager.OnShowMode;
 import indi.yume.tools.fragmentmanager.Tuple2;
-import rx.functions.Action1;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by yume on 16-4-21.
@@ -45,9 +46,9 @@ public class BlankFragment11 extends BaseManagerFragment {
                         .withEnterAnim(R.anim.fragment_left_enter)
                         .withExitAnim(R.anim.fragment_left_exit)
                         .startForObservable(BlankFragment11.this)
-                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
+                        .subscribe(new Consumer<Tuple2<Integer,Bundle>>() {
                             @Override
-                            public void call(Tuple2<Integer, Bundle> integerBundleTuple2) {
+                            public void accept(@NonNull Tuple2<Integer, Bundle> integerBundleTuple2) throws Exception {
                                 Toast.makeText(getContext(), "Result11", Toast.LENGTH_SHORT).show();
                             }
                         });
