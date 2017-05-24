@@ -19,7 +19,7 @@ Fragment切换方法的封装
 5. 全新状态管理方式，带来状态序列化、状态重现等高级特性
 6. 部分实现使用面向组合子设计，灵活清晰
 
-## 注意：3.x版本目前还属于初期开发阶段，很多以前的特性还没有实现，功能和稳定性上更推荐2.x版本(最新为2.6.1)，但后续会持续更新并更多维护3.x版本了，接口会尽量保持和老版本相同
+## 注意：3.x版本目前还属于初期开发阶段，很多以前的特性还没有实现，功能和稳定性上更推荐2.x版本(最新为2.7.0)，但后续会持续更新并更多维护3.x版本了，接口会尽量保持和老版本相同
 
 > 现在3.x版本只实现了Fragment普通方式启动、ResultData回调、BackPress处理功能、Rx启动方式，其他如侧滑返回、新Activity启动Fragment等高级功能将在后续更新中实现，敬请期待
 
@@ -38,7 +38,7 @@ Step2: 在工程中添加依赖：
 ```groovy
 dependencies {
     // 2.x
-    compile 'com.github.Yumenokanata:FragmentManager:2.6.1'
+    compile 'com.github.Yumenokanata:FragmentManager:2.7.0'
     // 3.x
     compile 'com.github.Yumenokanata:FragmentManager:3.0-RC1'
     // SNAPSHOT
