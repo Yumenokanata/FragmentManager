@@ -502,7 +502,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             BaseManagerFragment fragment = showStackByTagNoAnim(tag, fragmentTransaction);
             String oldTag = currentStackTag;
             currentStackTag = tag;
-            fragmentTransaction.commit();
+            fragmentTransaction.commitAllowingStateLoss();
 
             if(fragmentMap.containsKey(oldTag) && !fragmentMap.get(oldTag).isEmpty()) {
                 List<BaseManagerFragment> list = fragmentMap.get(oldTag);
