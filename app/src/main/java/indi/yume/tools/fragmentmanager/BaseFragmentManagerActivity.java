@@ -526,14 +526,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     public void clearCurrentStack(boolean resetCurrentTag){
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
-        if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
+        if((fragmentMap.containsKey(currentStackTag) && !fragmentMap.get(currentStackTag).isEmpty()))
             clearStackByTag(currentStackTag, fragmentTransaction);
 
         if(!resetCurrentTag)
             return;
 
         BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
-        fragmentTransaction.commit();
+        fragmentTransaction.commitAllowingStateLoss();
         if(fragment != null) {
             fragmentOnCreateShow(fragment);
         } else {
