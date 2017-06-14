@@ -851,6 +851,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     private void startAnimation(@AnimRes int animRes, View view, final Action0 doOnOver) {
+        if(view == null) {
+            doOnOver.call();
+            return;
+        }
         if(view.getBackground() == null)
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.white));
 
