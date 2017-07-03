@@ -409,8 +409,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
             clearStackByTag(currentStackTag, fragmentTransaction);
 
-        if(!resetCurrentTag)
+        if(!resetCurrentTag) {
+            fragmentTransaction.commit();
             return;
+        }
 
         BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
         fragmentTransaction.commit();
