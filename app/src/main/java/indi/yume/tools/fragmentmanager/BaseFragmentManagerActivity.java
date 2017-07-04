@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
@@ -362,10 +361,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     public void switchToStackByTag(String tag, boolean clearCurrentStack) {
-        switchToStackByTag(tag, clearCurrentStack, false);
+        switchToStackByTag(tag, clearCurrentStack, false, null);
     }
 
     private void switchToStackByTag(String tag, boolean clearCurrentStack, boolean forceSwitch){
+        switchToStackByTag(tag, clearCurrentStack, forceSwitch, null);
+    }
+
+    private void switchToStackByTag(String tag, boolean clearCurrentStack, boolean forceSwitch, @Nullable Intent newIntent){
         if(!baseFragmentMap.containsKey(tag))
             throw new Error("Tag: " + tag + " not in baseFragmentMap. [BaseFragmentWithTag()]");
 
@@ -379,7 +382,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 else
                     hideStackByTag(currentStackTag, fragmentTransaction);
 
-            BaseManagerFragment fragment = showStackByTagNoAnim(tag, fragmentTransaction);
+            BaseManagerFragment fragment = showStackByTagNoAnim(tag, newIntent, fragmentTransaction);
             String oldTag = currentStackTag;
             currentStackTag = tag;
             fragmentTransaction.commit();
@@ -393,8 +396,44 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 fragment.onShow(OnShowMode.ON_CREATE);
             } else {
                 BaseManagerFragment currentFragment = getCurrentFragment();
-                if(currentFragment != null)
+                if(currentFragment != null) {
+                    if(newIntent != null)
+                        currentFragment.onNewIntent(newIntent);
                     currentFragment.onShow(OnShowMode.ON_SWITCH);
+                }
+            }
+        }
+    }
+
+    public void switchToAndClear(String tag, boolean resetTag, Intent newIntent){
+        currentStackTag = tag;
+        clearStack(tag, resetTag, newIntent);
+    }
+
+    public void clearStack(String tag, boolean resetTag, Intent newIntent){
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        if((fragmentMap.containsKey(tag) && fragmentMap.get(tag).size() != 0))
+            clearStackByTag(tag, fragmentTransaction);
+
+        if(!resetTag) {
+            fragmentTransaction.commit();
+            return;
+        }
+
+        BaseManagerFragment fragment = showStackByTagNoAnim(tag, newIntent, fragmentTransaction);
+        if(fragment != null && !TextUtils.equals(tag, currentStackTag))
+            fragmentTransaction.hide(fragment);
+        fragmentTransaction.commit();
+
+        if(fragment != null) {
+            fragment.onShow(OnShowMode.ON_CREATE);
+        } else {
+            BaseManagerFragment currentFragment = getCurrentFragment();
+            if(currentFragment != null) {
+                if(newIntent != null)
+                    currentFragment.onNewIntent(newIntent);
+                currentFragment.onShow(OnShowMode.ON_SWITCH);
             }
         }
     }
@@ -469,6 +508,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             }
     }
 
+    private BaseManagerFragment showStackByTagNoAnim(String tag, FragmentTransaction fragmentTransaction){
+        return showStackByTagNoAnim(tag, null, fragmentTransaction);
+    }
+
     /**
      *
      * @param tag
@@ -476,16 +519,18 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
      *
      * @return is create new.
      */
-    private BaseManagerFragment showStackByTagNoAnim(String tag, FragmentTransaction fragmentTransaction){
+    private BaseManagerFragment showStackByTagNoAnim(String tag,
+                                                     @Nullable Intent intent,
+                                                     FragmentTransaction fragmentTransaction){
         if(!fragmentMap.containsKey(tag))
             fragmentMap.put(tag, new LinkedList<BaseManagerFragment>());
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
-        if(list.size() == 0) {
+        if(list.isEmpty()) {
             BaseManagerFragment fragment = getFragmentByClass(baseFragmentMap.get(tag));
             if (fragment == null)
                 throw new Error("baseFragmentMap [BaseFragmentWithTag()] has wrong");
-            fragment.setIntent(getIntent());
+            fragment.setIntent(intent != null ? intent : getIntent());
             fragmentTransaction.add(fragmentViewId(), fragment, fragment.getHashTag());
             list.add(fragment);
             return fragment;
@@ -496,6 +541,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                     if(willShowFragment != f && !f.isHidden()) {
                         fragmentTransaction.hide(f);
                     }
+            if(intent != null)
+                willShowFragment.onNewIntent(intent);
             fragmentTransaction.show(willShowFragment);
             return null;
         }

@@ -291,6 +291,11 @@ public abstract class BaseManagerFragment extends Fragment {
      */
     protected void onShow(@OnShowMode int callMode){ }
 
+    /**
+     * Just call this method at {@link BaseFragmentManagerActivity#clearStack(String, boolean, Intent)}
+     */
+    protected void onNewIntent(Intent intent) { }
+
     protected void preBackResultData(){ }
 
     protected boolean onBackPressed() {
