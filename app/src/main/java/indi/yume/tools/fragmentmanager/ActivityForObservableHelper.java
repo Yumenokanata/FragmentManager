@@ -12,6 +12,7 @@ import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import lombok.Data;
@@ -57,25 +58,33 @@ public class ActivityForObservableHelper {
             }
     }
 
-    public static Single<Tuple2<Integer, Bundle>> startActivityForObservable(String tag, Activity activity, Intent intent) {
+    public static Single<Tuple2<Integer, Bundle>> startActivityForObservable(String tag, final Activity activity, final Intent intent) {
         final ResultData resultData = savedInstanceStateMap.get(tag);
         if(resultData == null)
             return Single.error(new RuntimeException("Do not have this Activity state: tag=" + tag));
 
         return Single.create(new SingleOnSubscribe<Tuple2<Integer, Bundle>>() {
             @Override
-            public void subscribe(@NonNull SingleEmitter<Tuple2<Integer, Bundle>> emitter) throws Exception {
+            public void subscribe(final @NonNull SingleEmitter<Tuple2<Integer, Bundle>> emitter) throws Exception {
                 final int requestCode = random.nextInt() & 0x0000ffff;
                 activity.startActivityForResult(intent, requestCode);
                 resultData.getOnResultSubject().firstOrError()
-                        .subscribe(tuple -> {
-                                    if (requestCode == tuple.getData1())
-                                        emitter.onSuccess(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                                    else
-                                        emitter.onError(new RuntimeException(intent.getComponent().getClassName()
-                                                + " has error requestCode: " + requestCode + " != " + tuple.getData1()));
-                                },
-                                emitter::onError);
+                        .subscribe(new Consumer<Tuple3<Integer, Integer, Bundle>>() {
+                                       @Override
+                                       public void accept(@NonNull Tuple3<Integer, Integer, Bundle> tuple) throws Exception {
+                                           if (requestCode == tuple.getData1())
+                                               emitter.onSuccess(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                           else
+                                               emitter.onError(new RuntimeException(intent.getComponent().getClassName()
+                                                       + " has error requestCode: " + requestCode + " != " + tuple.getData1()));
+                                       }
+                                   },
+                                new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(@NonNull Throwable throwable) throws Exception {
+                                        emitter.onError(throwable);
+                                    }
+                                });
             }
         });
     }

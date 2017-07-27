@@ -171,10 +171,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         this.isShowAnimWhenFinish = isShowAnimWhenFinish;
     }
 
-    private void fragmentOnCreateShow(BaseManagerFragment fragment) {
-        fragment.setOnCreatedViewListener(v -> {
-            fragment.onShow(OnShowMode.ON_CREATE);
-            fragment.setOnCreatedViewListener(null);
+    private void fragmentOnCreateShow(final BaseManagerFragment fragment) {
+        fragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
+
+            @Override
+            public void onCreatedView(View view) {
+                fragment.onShow(OnShowMode.ON_CREATE);
+                fragment.setOnCreatedViewListener(null);
+            }
         });
     }
 
@@ -745,7 +749,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     private void removeFragmentWithAnim(String tag) {
         List<BaseManagerFragment> list = fragmentMap.get(tag);
-        list = list == null ? new LinkedList<>() : list;
+        list = list == null ? new LinkedList<BaseManagerFragment>() : list;
         if(list.size() <= 1) {
             int exitAnim = -1;
             if(list.size() == 1) {
@@ -799,7 +803,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     private void addFragment(String tag,
                              final BaseManagerFragment nextFragment,
-                             @Nullable AnimData anim) {
+                             final @Nullable AnimData anim) {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
@@ -836,10 +840,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
 
-            nextFragment.setOnCreatedViewListener(v -> {
-                backFragment.onHide(OnHideMode.ON_START_NEW);
-                nextFragment.onShow(OnShowMode.ON_CREATE);
-                nextFragment.setOnCreatedViewListener(null);
+            nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
+                @Override
+                public void onCreatedView(View view) {
+                    backFragment.onHide(OnHideMode.ON_START_NEW);
+                    nextFragment.onShow(OnShowMode.ON_CREATE);
+                    nextFragment.setOnCreatedViewListener(null);
+                }
             });
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());

@@ -6,13 +6,11 @@ buildscript {
 
     dependencies {
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
-        classpath 'me.tatarka:gradle-retrolambda:3.6.0'
     }
 }
 
 apply plugin: 'com.android.library'
 apply plugin: 'android-apt'
-apply plugin: 'me.tatarka.retrolambda'
 
 android {
     compileSdkVersion 25
@@ -30,10 +28,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    compileOptions {
-        targetCompatibility 1.8
-        sourceCompatibility 1.8
-    }
 }
 
 dependencies {
@@ -43,6 +37,7 @@ dependencies {
 
     compile "io.reactivex.rxjava2:rxjava:2.1.0"
 
+    provided 'org.glassfish:javax.annotation:10.0-b28'
     apt "org.projectlombok:lombok:1.16.10"
     provided "org.projectlombok:lombok:1.16.10"
 }

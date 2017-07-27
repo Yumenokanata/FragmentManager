@@ -15,6 +15,10 @@ import java.util.Random;
 
 import indi.yume.tools.renderercalendar.R;
 import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import lombok.Getter;
@@ -267,30 +271,41 @@ public abstract class BaseManagerFragment extends Fragment {
 
     public Single<Tuple2<Integer, Bundle>> startForObservable(RxStartBuilder builder) {
         final Intent intent = builder.getIntent();
-        boolean checkThrottle = builder.isCheckThrottle();
-        boolean enableAnimation = builder.isEnableAnimation();
-        Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
-        AnimData anim = enableAnimation ? builder.getAnim() : null;
+        final boolean checkThrottle = builder.isCheckThrottle();
+        final boolean enableAnimation = builder.isEnableAnimation();
+        final Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
+        final AnimData anim = enableAnimation ? builder.getAnim() : null;
 
-        return Single.create(emitter -> {
-            if(checkThrottle && !ThrottleUtil.checkEvent())
-                throw new ThrottleException();
+        return Single.create(new SingleOnSubscribe<Tuple2<Integer, Bundle>>() {
+            @Override
+            public void subscribe(final @NonNull SingleEmitter<Tuple2<Integer, Bundle>> emitter) throws Exception {
+                if (checkThrottle && !ThrottleUtil.checkEvent())
+                    throw new ThrottleException();
 
-            final int requestCode1 = random.nextInt() & 0x0000ffff;
-            start(StartBuilder.builder(intent)
-                    .withNewActivity(newActivity)
-                    .withRequestCode(requestCode1)
-                    .withCheckThrottle(false)
-                    .withAnimData(anim));
-            onResultSubject.firstOrError()
-                    .subscribe(tuple -> {
-                                if (requestCode1 == tuple.getData1())
-                                    emitter.onSuccess(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                                else
-                                    emitter.onError(new RuntimeException(getClass().getSimpleName()
-                                            + " has error requestCode: " + requestCode1 + " != " + tuple.getData1()));
-                            },
-                            emitter::onError);
+                final int requestCode1 = random.nextInt() & 0x0000ffff;
+                start(StartBuilder.builder(intent)
+                        .withNewActivity(newActivity)
+                        .withRequestCode(requestCode1)
+                        .withCheckThrottle(false)
+                        .withAnimData(anim));
+                onResultSubject.firstOrError()
+                        .subscribe(new Consumer<Tuple3<Integer, Integer, Bundle>>() {
+                                       @Override
+                                       public void accept(@NonNull Tuple3<Integer, Integer, Bundle> tuple) throws Exception {
+                                           if (requestCode1 == tuple.getData1())
+                                               emitter.onSuccess(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                           else
+                                               emitter.onError(new RuntimeException(getClass().getSimpleName()
+                                                       + " has error requestCode: " + requestCode1 + " != " + tuple.getData1()));
+                                       }
+                                   },
+                                new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(@NonNull Throwable throwable) throws Exception {
+                                        emitter.onError(throwable);
+                                    }
+                                });
+            }
         });
     }
 
