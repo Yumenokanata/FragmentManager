@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.experimental.UtilityClass;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
@@ -55,7 +56,9 @@ public class ActivityForObservableHelper {
                 savedInstanceStateMap.get(tag).setHasSaveSate(false);
     }
 
-    public static Observable<Tuple2<Integer, Bundle>> startActivityForObservable(String tag, Activity activity, Intent intent) {
+    public static Observable<Tuple2<Integer, Bundle>> startActivityForObservable(final String tag,
+                                                                                 final Activity activity,
+                                                                                 final Intent intent) {
         final ResultData resultData = savedInstanceStateMap.get(tag);
         if(resultData == null)
             return Observable.error(new RuntimeException("Do not have this Activity state: tag=" + tag));
@@ -66,12 +69,20 @@ public class ActivityForObservableHelper {
                 final int requestCode = random.nextInt() & 0x0000ffff;
                 activity.startActivityForResult(intent, requestCode);
                 resultData.getOnResultSubject().subscribe(
-                        tuple -> {
-                            if (requestCode == tuple.getData1())
-                                sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                            sub.onCompleted();
+                        new Action1<Tuple3<Integer, Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple3<Integer, Integer, Bundle> tuple) {
+                                if (requestCode == tuple.getData1())
+                                    sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                sub.onCompleted();
+                            }
                         },
-                        sub::onError);
+                        new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                sub.onError(throwable);
+                            }
+                        });
             }
         });
     }

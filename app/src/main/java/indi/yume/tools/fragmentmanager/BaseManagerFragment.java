@@ -16,6 +16,8 @@ import java.util.Random;
 import indi.yume.tools.renderercalendar.R;
 import lombok.Getter;
 import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
@@ -268,28 +270,39 @@ public abstract class BaseManagerFragment extends Fragment {
 
     public Observable<Tuple2<Integer, Bundle>> startForObservable(RxStartBuilder builder) {
         final Intent intent = builder.getIntent();
-        boolean checkThrottle = builder.isCheckThrottle();
-        boolean enableAnimation = builder.isEnableAnimation();
-        Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
-        AnimData anim = enableAnimation ? builder.getAnim() : null;
+        final boolean checkThrottle = builder.isCheckThrottle();
+        final boolean enableAnimation = builder.isEnableAnimation();
+        final Class<? extends SingleBaseActivity> newActivity = builder.getNewActivity();
+        final AnimData anim = enableAnimation ? builder.getAnim() : null;
 
-        return Observable.create(sub -> {
-            if(checkThrottle && !ThrottleUtil.checkEvent())
-                throw new ThrottleException();
+        return Observable.unsafeCreate(new Observable.OnSubscribe<Tuple2<Integer, Bundle>>() {
+            @Override
+            public void call(final Subscriber<? super Tuple2<Integer, Bundle>> sub) {
+                if (checkThrottle && !ThrottleUtil.checkEvent())
+                    throw new ThrottleException();
 
-            final int requestCode1 = random.nextInt() & 0x0000ffff;
-            start(StartBuilder.builder(intent)
-                    .withNewActivity(newActivity)
-                    .withRequestCode(requestCode1)
-                    .withCheckThrottle(false)
-                    .withAnimData(anim));
-            onResultSubject.subscribe(
-                    tuple -> {
-                        if (requestCode1 == tuple.getData1())
-                            sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
-                        sub.onCompleted();
-                    },
-                    sub::onError);
+                final int requestCode1 = random.nextInt() & 0x0000ffff;
+                start(StartBuilder.builder(intent)
+                        .withNewActivity(newActivity)
+                        .withRequestCode(requestCode1)
+                        .withCheckThrottle(false)
+                        .withAnimData(anim));
+                onResultSubject.subscribe(
+                        new Action1<Tuple3<Integer, Integer, Bundle>>() {
+                            @Override
+                            public void call(Tuple3<Integer, Integer, Bundle> tuple) {
+                                if (requestCode1 == tuple.getData1())
+                                    sub.onNext(Tuple2.of(tuple.getData2(), tuple.getData3()));
+                                sub.onCompleted();
+                            }
+                        },
+                        new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                sub.onError(throwable);
+                            }
+                        });
+            }
         });
     }
 
@@ -419,6 +432,10 @@ public abstract class BaseManagerFragment extends Fragment {
 
     public boolean isTopOfStack() {
         return getManagerActivity().isTopOfStack(this);
+    }
+
+    public void backToFirst() {
+        getManagerActivity().backToFirst(getStackTag());
     }
 
     interface OnCreatedViewListener {

@@ -172,10 +172,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         this.isShowAnimWhenFinish = isShowAnimWhenFinish;
     }
 
-    private void fragmentOnCreateShow(BaseManagerFragment fragment) {
-        fragment.setOnCreatedViewListener(v -> {
-            fragment.onShow(OnShowMode.ON_CREATE);
-            fragment.setOnCreatedViewListener(null);
+    private void fragmentOnCreateShow(final BaseManagerFragment fragment) {
+        fragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
+            @Override
+            public void onCreatedView(View view) {
+                fragment.onShow(OnShowMode.ON_CREATE);
+                fragment.setOnCreatedViewListener(null);
+            }
         });
     }
 
@@ -338,7 +341,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             if(requestCode != -1)
                 intent.putExtra(INTENT_KEY_REQUEST_CODE, requestCode);
             intent.putExtra(INTENT_KEY_ANIM_DATA, anim);
-            getIntent().putExtra(INTENT_KEY_STACK_TAG,
+            intent.putExtra(INTENT_KEY_STACK_TAG,
                     fragment.getStackTag() == null ? getCurrentStackTag() : fragment.getStackTag());
 
             fragment.setIntent(intent);
@@ -526,11 +529,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     public void clearCurrentStack(boolean resetCurrentTag){
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
-        if((fragmentMap.containsKey(currentStackTag) && !fragmentMap.get(currentStackTag).isEmpty()))
+        if(fragmentMap.containsKey(currentStackTag) && !fragmentMap.get(currentStackTag).isEmpty())
             clearStackByTag(currentStackTag, fragmentTransaction);
 
-        if(!resetCurrentTag)
+        if(!resetCurrentTag) {
+            fragmentTransaction.commitAllowingStateLoss();
             return;
+        }
 
         BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
         fragmentTransaction.commitAllowingStateLoss();
@@ -541,6 +546,25 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             if(currentFragment != null)
                 currentFragment.onShow(OnShowMode.ON_SWITCH);
         }
+    }
+
+    public void backToFirst(String tag) {
+        if(!fragmentMap.containsKey(tag) || fragmentMap.get(tag).size() < 2)
+            return;
+
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        List<BaseManagerFragment> list = fragmentMap.get(tag);
+
+        BaseManagerFragment firstFragment = list.get(0);
+
+        for(BaseManagerFragment fragment : list)
+            if(firstFragment != fragment)
+                fragmentTransaction.remove(fragment);
+        list.clear();
+        list.add(firstFragment);
+
+        fragmentTransaction.commitAllowingStateLoss();
+        firstFragment.onShow(OnShowMode.ON_BACK);
     }
 
     public void addToStack(BaseManagerFragment fragment){
@@ -746,7 +770,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     private void removeFragmentWithAnim(String tag) {
         List<BaseManagerFragment> list = fragmentMap.get(tag);
-        list = list == null ? new LinkedList<>() : list;
+        list = list == null ? new LinkedList<BaseManagerFragment>() : list;
         if(list.size() <= 1) {
             int exitAnim = -1;
             if(list.size() == 1) {
@@ -800,7 +824,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
     private void addFragment(String tag,
                              final BaseManagerFragment nextFragment,
-                             @Nullable AnimData anim) {
+                             final @Nullable AnimData anim) {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
         List<BaseManagerFragment> list = fragmentMap.get(tag);
@@ -837,10 +861,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
             fragmentTransaction.commit();
 
-            nextFragment.setOnCreatedViewListener(v -> {
-                backFragment.onHide(OnHideMode.ON_START_NEW);
-                nextFragment.onShow(OnShowMode.ON_CREATE);
-                nextFragment.setOnCreatedViewListener(null);
+            nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
+                @Override
+                public void onCreatedView(View view) {
+                    backFragment.onHide(OnHideMode.ON_START_NEW);
+                    nextFragment.onShow(OnShowMode.ON_CREATE);
+                    nextFragment.setOnCreatedViewListener(null);
+                }
             });
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
