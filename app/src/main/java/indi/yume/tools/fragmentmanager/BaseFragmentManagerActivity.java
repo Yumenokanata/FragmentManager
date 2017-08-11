@@ -80,7 +80,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             return fragmentAnim;
     }
 
-    protected String getCurrentStackTag() {
+    public String getCurrentStackTag() {
         return currentStackTag;
     }
 
