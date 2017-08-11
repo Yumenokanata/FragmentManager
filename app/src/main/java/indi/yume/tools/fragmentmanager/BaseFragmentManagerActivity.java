@@ -562,6 +562,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 fragmentTransaction.remove(fragment);
         list.clear();
         list.add(firstFragment);
+        fragmentTransaction.show(firstFragment);
 
         fragmentTransaction.commitAllowingStateLoss();
         firstFragment.onShow(OnShowMode.ON_BACK);
