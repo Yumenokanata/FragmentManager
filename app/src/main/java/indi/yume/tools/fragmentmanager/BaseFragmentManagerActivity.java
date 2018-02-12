@@ -503,7 +503,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             BaseManagerFragment fragment = showStackByTagNoAnim(tag, newIntent, fragmentTransaction);
             String oldTag = currentStackTag;
             currentStackTag = tag;
-            fragmentTransaction.commit();
+            fragmentTransaction.commitAllowingStateLoss();
 
             if(fragmentMap.containsKey(oldTag) && !fragmentMap.get(oldTag).isEmpty()) {
                 List<BaseManagerFragment> list = fragmentMap.get(oldTag);
@@ -563,11 +563,11 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     public void clearCurrentStack(boolean resetCurrentTag){
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
-        if((fragmentMap.containsKey(currentStackTag) && fragmentMap.get(currentStackTag).size() != 0))
+        if((fragmentMap.containsKey(currentStackTag) && !fragmentMap.get(currentStackTag).isEmpty()))
             clearStackByTag(currentStackTag, fragmentTransaction);
 
         if(!resetCurrentTag) {
-            fragmentTransaction.commit();
+            fragmentTransaction.commitAllowingStateLoss();
             return;
         }
 
@@ -901,6 +901,11 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
     }
 
     private void startAnimation(@AnimRes int animRes, View view, final Runnable doOnOver) {
+        if(view == null) {
+            doOnOver.run();
+            return;
+        }
+
         if(view.getBackground() == null)
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.white));
 
