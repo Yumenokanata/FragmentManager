@@ -1,26 +1,12 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
-    }
-}
-
 apply plugin: 'com.android.library'
-apply plugin: 'android-apt'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
-
+    compileSdkVersion 27
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 25
+        targetSdkVersion 27
         versionCode 1
-        versionName "1.0"
+        versionName "2.8"
     }
     buildTypes {
         release {
@@ -33,11 +19,11 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:25.1.0'
+    implementation 'com.android.support:appcompat-v7:27.0.2'
 
-    compile "io.reactivex.rxjava2:rxjava:2.1.0"
+    implementation "io.reactivex.rxjava2:rxjava:2.1.6"
 
     provided 'org.glassfish:javax.annotation:10.0-b28'
-    apt "org.projectlombok:lombok:1.16.10"
-    provided "org.projectlombok:lombok:1.16.10"
+    annotationProcessor "org.projectlombok:lombok:1.16.16"
+    provided "org.projectlombok:lombok:1.16.16"
 }

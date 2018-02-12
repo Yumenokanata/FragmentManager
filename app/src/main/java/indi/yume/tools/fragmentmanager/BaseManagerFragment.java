@@ -8,11 +8,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.View;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
 import indi.yume.tools.renderercalendar.R;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
@@ -22,6 +17,10 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import lombok.Getter;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 import static indi.yume.tools.fragmentmanager.Utils.checkThread;
 
@@ -364,6 +363,11 @@ public abstract class BaseManagerFragment extends Fragment {
     protected void onShow(@OnShowMode int callMode){
         isShow = true;
     }
+
+    /**
+     * Just call this method at {@link BaseFragmentManagerActivity#clearStack(String, boolean, Intent)}
+     */
+    protected void onNewIntent(Intent intent) { }
 
     protected void preBackResultData(){ }
 
