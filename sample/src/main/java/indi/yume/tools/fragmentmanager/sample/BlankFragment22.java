@@ -2,18 +2,19 @@ package indi.yume.tools.fragmentmanager.sample;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import indi.yume.tools.fragmentmanager.BaseManagerFragment;
+import indi.yume.tools.fragmentmanager.DefaultManagerFragment;
 import indi.yume.tools.fragmentmanager.anno.OnHideMode;
 import indi.yume.tools.fragmentmanager.anno.OnShowMode;
 
 /**
  * Created by yume on 16-4-21.
  */
-public class BlankFragment22 extends BaseManagerFragment {
+public class BlankFragment22 extends DefaultManagerFragment {
 
 
     public BlankFragment22() {
@@ -32,8 +33,9 @@ public class BlankFragment22 extends BaseManagerFragment {
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
         System.out.println(this.getClass().getSimpleName() + ": onCreateView");
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_blank_fragment22, container, false);
@@ -49,7 +51,7 @@ public class BlankFragment22 extends BaseManagerFragment {
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         System.out.println(this.getClass().getSimpleName() + ": onViewCreated");
     }
@@ -70,5 +72,11 @@ public class BlankFragment22 extends BaseManagerFragment {
     public void onHide(@NonNull OnHideMode hideMode) {
         super.onHide(hideMode);
         System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.toString(hideMode));
+    }
+
+    @Override
+    @NonNull
+    public Fragment getFragment() {
+        return this;
     }
 }

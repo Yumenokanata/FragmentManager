@@ -1,17 +1,19 @@
 package indi.yume.tools.fragmentmanager
 
+import android.support.annotation.CheckResult
 import android.support.annotation.IdRes
+import android.support.v4.app.FragmentTransaction
 import indi.yume.tools.fragmentmanager.event.Action
 import indi.yume.tools.fragmentmanager.event.EmptyAction
 import indi.yume.tools.fragmentmanager.event.GenAction
 import indi.yume.tools.fragmentmanager.event.TransactionAction
 import indi.yume.tools.fragmentmanager.functions.ActionTrunk
 import indi.yume.tools.fragmentmanager.model.ManagerState
-import indi.yume.tools.fragmentmanager.model.RealWorld
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Completable
+import io.reactivex.*
 import io.reactivex.internal.schedulers.NewThreadScheduler
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.util.concurrent.TimeUnit
@@ -21,94 +23,132 @@ import java.util.concurrent.TimeoutException
  * Created by yume on 17-4-10.
  */
 
-class StackManager(val realWorld: RealWorld) {
+class StackManager : Store<StateData, ActionTrunk>(
+        initState = StateData(ManagerState.empty(), ManagerState.empty(), EmptyAction()),
+        reducer = { state, action -> handAction(Single.just(state), action) }) {
+    @CheckResult
+    fun dispatch(action: Action): Single<StateData> =
+            dispatch { action }
 
-    internal val subject = PublishSubject.create<ActionTrunk>().toSerialized()
+    companion object {
+        private fun reduce(oldState: ManagerState, action: Action): ManagerState {
+            return action.reduce(oldState)
+        }
 
-    init {
-        subject.toFlowable(BackpressureStrategy.BUFFER)
-                .observeOn(NewThreadScheduler())
-                .scan<StateData>(StateData(ManagerState.empty(), ManagerState.empty(), EmptyAction()))
-                { stateData, trunk ->
-                    try {
-                        handAction(stateData, trunk)
-                    } catch (e: Exception) {
-                        logger.error("Deal event error: ", e)
-                        stateData
+        private fun middleware(oldState: ManagerState, newState: ManagerState, action: Action): Completable {
+            return action.effect(ApplicationStore, oldState, newState)
+        }
+
+        private fun handAction(stateData: Single<StateData>, trunk: ActionTrunk): Single<StateData> {
+            return stateData.flatMap<StateData> { inputStateData ->
+                val action = trunk(inputStateData.newState)
+
+                when (action) {
+                    is TransactionAction -> {
+                        Observable.fromIterable(action.list)
+                                .reduce(Single.just(inputStateData), { newSS, act ->
+                                    newSS.hide().flatMap { handAction(Single.just(it), act) }
+                                }).flatMap { it }
                     }
-                }
-                .doOnNext { state -> logger.debug("current state: {}", state) }
-                .subscribe({ newState -> }) { t -> logger.error("Deal event error: ", t) }
-    }
+                    is GenAction -> {
+                        val subject = BehaviorSubject.createDefault<ActionTrunk>(action.initAction).toSerialized()
 
-    constructor(activity: BaseFragmentManagerActivity,
-                @IdRes fragmentId: Int) : this(RealWorld(activity, fragmentId, activity.supportFragmentManager))
+                        subject.reduce(inputStateData, { oldState, act ->
+                            handAction(Single.just(oldState), act)
+                                    .map { newState ->
+                                        val newAct = action.generator(newState.newState, newState.event)
+                                        if (newAct != null)
+                                            subject.onNext { newAct }
+                                        else
+                                            subject.onComplete()
 
-    private fun handAction(stateData: StateData, trunk: ActionTrunk): StateData {
-        val (oldState, newState, event) = stateData
-        val action = trunk(newState)
+                                        newState
+                                    }
+                                    .blockingGet()
+                        })
+                    }
+                    else -> {
+                        val newStateData = StateData(inputStateData.newState, reduce(inputStateData.newState, action), action)
 
-        return when(action) {
-            is TransactionAction -> {
-                var newS = stateData
-                for (act in action.list)
-                    newS = handAction(newS, act)
-                newS
-            }
-            is GenAction -> {
-                var act = action.initAction
-                var newS = stateData
-                do {
-                    newS = handAction(newS, act)
-                    act = action.generator(newS.newState, newS.event)
-                            ?.let { { _: ManagerState -> it } } ?: break
-                } while (true)
-                newS
-            }
-            else -> {
-                logger.trace("befor current state: {}", newState)
-                logger.trace("do action {}", action)
-
-                val newStateData = StateData(newState, reduce(newState, action), action)
-
-                if(middleware(newStateData.oldState, newStateData.newState, newStateData.event)
-                        .blockingAwait(100, TimeUnit.SECONDS)) {
-                    newStateData
-                } else {
-                    throw TimeoutException("Deal effect event timeout: ${action}")
-                    stateData
+                        middleware(newStateData.oldState, newStateData.newState, newStateData.event)
+                                .toSingleDefault(newStateData)
+                    }
                 }
             }
         }
     }
+}
 
-    private fun reduce(oldState: ManagerState, action: Action): ManagerState {
-        return action.reduce(oldState)
-    }
+sealed class Free<A>
 
-    private fun middleware(oldState: ManagerState, newState: ManagerState, action: Action): Completable {
-        return action.effect(realWorld, oldState, newState)
-    }
+class Return<A>(val a: A) : Free<A>()
+class Suspend<A>(val s: Single<A>) : Free<A>()
+class FlatMap<A, B>(val s: Free<A>, val f: (A) -> Free<B>) : Free<B>()
 
-    fun dispatch(action: Action) {
-        dispatch { action }
-    }
+fun <A> run(a: Free<A>): Single<A> =
+        when(a) {
+            is Return<A> -> Single.just(a.a)
+            is Suspend<A> -> a.s
+            is FlatMap<*, A> -> doFlatmap(a)
+        }
 
-    fun dispatch(trunk: ActionTrunk) {
-        subject.onNext(trunk)
-    }
+inline fun <A, B> doFlatmap(a: FlatMap<A, B>): Single<B> =
+        when(a.s) {
+            is Suspend<A> -> a.s.s.flatMap { run(a.f(it)) }
+            else -> throw RuntimeException("Impossible, since `step` eliminates these cases")
+        }
 
-    fun unsubscribe() {
-        subject.onComplete()
-    }
 
-    data class StateData(
+data class StateData(
         val oldState: ManagerState,
         val newState: ManagerState,
         val event: Action
-    )
+)
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(StackManager::class.java)
+
+interface Reducer<S, A> {
+    fun reduce(state: S, action: A): Single<S>
+}
+
+typealias LambdaAction<S> = (S) -> S
+
+open class Store<S, A>(
+        initState: S? = null,
+        val reducer: (S, A) -> Single<S>
+) {
+    constructor(
+            initState: S? = null,
+            reducer: Reducer<S, A>): this(initState, reducer::reduce)
+
+    val stateSubject: Subject<S> = BehaviorSubject.createDefault<S>(initState).toSerialized()
+
+    init {
+        bind().subscribe(
+                { println("next: $it") },
+                { println("error: $it") },
+                { println("complete") }
+        )
     }
+
+    fun bind(): Observable<S> = stateSubject
+
+    @CheckResult
+    fun dispatch(action: A): Single<S> =
+            stateSubject.firstOrError()
+                    .flatMap { reducer(it, action) }
+                    .doOnSuccess { stateSubject.onNext(it) }
+
+    fun dispatchUnsafe(action: A) =
+            dispatch(action).subscribe()
+
+    @CheckResult
+    fun dispatchLambda(action: LambdaAction<S>): Single<S> =
+            stateSubject.firstOrError()
+                    .map { action(it) }
+                    .doOnSuccess { stateSubject.onNext(it) }
+
+    fun dispatchUnsafe(action: LambdaAction<S>) =
+            dispatchLambda(action).subscribe()
+
+    fun disposable() = stateSubject.onComplete()
 }

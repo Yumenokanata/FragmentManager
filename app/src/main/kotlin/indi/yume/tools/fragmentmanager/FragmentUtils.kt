@@ -13,11 +13,10 @@ import indi.yume.tools.fragmentmanager.anno.OnShowMode
 import indi.yume.tools.fragmentmanager.exception.DoEffectException
 import indi.yume.tools.fragmentmanager.functions.*
 import indi.yume.tools.fragmentmanager.model.AnimData
-import indi.yume.tools.fragmentmanager.model.FragmentItem
 import indi.yume.tools.fragmentmanager.model.ItemState
 import io.reactivex.Completable
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.rxkotlin.ofType
 import org.slf4j.LoggerFactory
 
 /**
@@ -27,19 +26,51 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("FragmentUtil")
 
-fun commit(manager: FragmentManager, func: (FragmentTransaction) -> Completable): Completable {
-    return Single.fromCallable { manager.beginTransaction() }
-            .flatMapCompletable { transaction ->
-                val compeletable = func(transaction)
-                try {
-                    transaction.commit()
-                    compeletable
-                } catch (e: Exception) {
-                    Completable.error(e)
-                }
-            }
+typealias Transaction = Pair<ActivityItem, FragmentTransaction>
+
+typealias CommitFun = (FragmentManager, (FragmentTransaction) -> Completable) -> Completable
+
+val commit: CommitFun = { manager, f ->
+    Completable.defer {
+        val transaction = manager.beginTransaction()
+        val completeable = f(transaction)
+        transaction.commit()
+        completeable
+    }
             .subscribeOn(AndroidSchedulers.mainThread())
 }
+
+val commitNow: CommitFun = { manager, f ->
+    Completable.defer {
+        val transaction = manager.beginTransaction()
+        val completeable = f(transaction)
+        transaction.commitNow()
+        completeable
+    }
+            .subscribeOn(AndroidSchedulers.mainThread())
+}
+
+val commitAllowingStateLoss: CommitFun = { manager, f ->
+    Completable.defer {
+        val transaction = manager.beginTransaction()
+        val completeable = f(transaction)
+        transaction.commitAllowingStateLoss()
+        completeable
+    }
+            .subscribeOn(AndroidSchedulers.mainThread())
+}
+
+val commitNowAllowingStateLoss: CommitFun = { manager, f ->
+    Completable.defer {
+        val transaction = manager.beginTransaction()
+        val completeable = f(transaction)
+        transaction.commitNowAllowingStateLoss()
+        completeable
+    }
+            .subscribeOn(AndroidSchedulers.mainThread())
+}
+
+
 
 fun onResume(): IO<(FragmentItem) -> Unit> =
         state { { item -> item.onShow(OnShowMode.OnResume) } }
@@ -57,7 +88,7 @@ fun onSwitchTag(
 
 fun removeFragmentWithAnim(
         forePair: Pair<FragmentItem, ItemState>,
-        backPair: Pair<FragmentItem, ItemState>?): IO<State<FragmentTransaction, Completable>> {
+        backPair: Pair<FragmentItem, ItemState>?): IO<State<Transaction, Completable>> {
     val foreItem = forePair.first
     val foreState = forePair.second
     val backItem = backPair?.first
@@ -68,12 +99,12 @@ fun removeFragmentWithAnim(
         return removeFragmentNoAnim(forePair, backPair)
 
     return state { realworld ->
-        state { transaction ->
+        state { (activityItem, transaction) ->
             if(backItem != null)
-                transaction.show(backItem.fragment)
+                transaction.show(backItem.fragment.fragment)
 
             startAnimation(animData.exitAnim)(realworld)
-                    .second(foreItem.fragment.view!!)
+                    .second(foreItem.fragment.fragment.view!!)
                     .doOnSubscribe { dis ->
                         if (backItem != null
                                 && foreState.requestCode != -1
@@ -83,9 +114,10 @@ fun removeFragmentWithAnim(
                                     foreState.resultData)
                     }
                     .doOnComplete {
-                        realworld.fragmentCollection -= foreItem.hashTag
-                        realworld.fragmentManager.beginTransaction()
-                                .remove(foreItem.fragment)
+                        activityItem.fragmentCollection.destoryData(foreItem.hashKey)
+
+                        activityItem.activity.provideFragmentManager.beginTransaction()
+                                .remove(foreItem.fragment.fragment)
                                 .commit()
                         backItem?.onShow(OnShowMode.OnBack)
                     }
@@ -95,12 +127,12 @@ fun removeFragmentWithAnim(
 
 fun removeFragmentNoAnim(
         forePair: Pair<FragmentItem, ItemState>,
-        backPair: Pair<FragmentItem, ItemState>?): IO<State<FragmentTransaction, Completable>> {
+        backPair: Pair<FragmentItem, ItemState>?): IO<State<Transaction, Completable>> {
     val (foreItem, foreState) = forePair
     val (backItem, backState) = backPair ?: null to null
 
     return state { realworld ->
-        state { transaction ->
+        state { (activityItem, transaction) ->
             if (backItem != null
                     && foreState.requestCode != -1
                     && foreState.isBackItem(backState))
@@ -109,10 +141,10 @@ fun removeFragmentNoAnim(
                         foreState.resultData)
 
             if (backItem != null)
-                transaction.show(backItem.fragment)
-            transaction.remove(foreItem.fragment)
+                transaction.show(backItem.fragment.fragment)
+            transaction.remove(foreItem.fragment.fragment)
 
-            realworld.fragmentCollection -= foreItem.hashTag
+            activityItem.fragmentCollection.destoryData(foreItem.hashKey)
             backItem?.onShow(OnShowMode.OnBack)
 
             Completable.complete()
@@ -122,7 +154,7 @@ fun removeFragmentNoAnim(
 
 fun showFragmentWithAnim(
         forePair: Pair<FragmentItem, ItemState>,
-        backPair: Pair<FragmentItem, ItemState>): IO<State<FragmentTransaction, Completable>> {
+        backPair: Pair<FragmentItem, ItemState>): IO<State<Transaction, Completable>> {
     val (foreItem, foreState) = forePair
     val (backItem, backState) = backPair
 
@@ -131,11 +163,12 @@ fun showFragmentWithAnim(
         return showFragmentNoAnim(foreItem, backItem)
 
     return state { realworld ->
-        state { transaction ->
-            transaction.show(backItem.fragment)
+        state { (activityItem, transaction) ->
+            transaction.show(backItem.fragment.fragment)
 
-            foreItem.controller.bind(ViewCreated::class.java)
-                    .first(ViewCreated(null))
+            foreItem.controller.bindFragmentLife()
+                    .ofType<FragmentLifeEvent.OnViewCreated>()
+                    .firstOrError()
                     .flatMapCompletable { event ->
                         backItem.onHide(OnHideMode.OnStartNew)
                         foreItem.onShow(OnShowMode.OnCreate)
@@ -148,8 +181,9 @@ fun showFragmentWithAnim(
                                     .second(event.view)
                     }
                     .doOnComplete {
-                        realworld.fragmentManager.beginTransaction()
-                                .hide(backItem.fragment)
+                        activityItem.activity.provideFragmentManager
+                                .beginTransaction()
+                                .hide(backItem.fragment.fragment)
                                 .commit()
                         backItem.onHide(OnHideMode.OnStartNewAfterAnim)
                         foreItem.onShow(OnShowMode.OnCreateAfterAnim)
@@ -160,11 +194,11 @@ fun showFragmentWithAnim(
 
 fun showFragmentNoAnim(
         foreItem: FragmentItem,
-        backItem: FragmentItem): IO<State<FragmentTransaction, Completable>> {
+        backItem: FragmentItem): IO<State<Transaction, Completable>> {
     return state { _ ->
-        state { transaction ->
-            transaction.hide(backItem.fragment)
-            transaction.show(foreItem.fragment)
+        state { (activityItem, transaction) ->
+            transaction.hide(backItem.fragment.fragment)
+            transaction.show(foreItem.fragment.fragment)
 
             showCallback(foreItem, backItem)
         }
@@ -172,10 +206,10 @@ fun showFragmentNoAnim(
 }
 
 fun showFragmentNoAnim(
-        foreItem: FragmentItem): IO<State<FragmentTransaction, Completable>> {
+        foreItem: FragmentItem): IO<State<Transaction, Completable>> {
     return state { _ ->
-        state { transaction ->
-            transaction.show(foreItem.fragment)
+        state { (activityItem, transaction) ->
+            transaction.show(foreItem.fragment.fragment)
             showCallback(foreItem)
         }
     }
@@ -183,7 +217,8 @@ fun showFragmentNoAnim(
 
 fun showCallback(foreItem: FragmentItem, backItem: FragmentItem? = null): Completable =
         Completable.create { e ->
-            foreItem.controller.bind(ViewCreated::class.java)
+            foreItem.controller.bindFragmentLife()
+                    .ofType<FragmentLifeEvent.OnViewCreated>()
                     .firstElement()
                     .subscribe({ _ ->
                         backItem?.onHide(OnHideMode.OnStartNew)
@@ -196,14 +231,14 @@ fun showCallback(foreItem: FragmentItem, backItem: FragmentItem? = null): Comple
 
 fun switchTag(
         foreItem: FragmentItem?,
-        backItem: FragmentItem?): IO<State<FragmentTransaction, Completable>> {
+        backItem: FragmentItem?): IO<State<Transaction, Completable>> {
     return state { _ ->
-        state { transaction ->
+        state { (activityItem, transaction) ->
             Completable.create { e ->
                 if (backItem != null)
-                    transaction.hide(backItem.fragment)
+                    transaction.hide(backItem.fragment.fragment)
                 if (foreItem != null)
-                    transaction.show(foreItem.fragment)
+                    transaction.show(foreItem.fragment.fragment)
                 e.onComplete()
             }
                     .doOnComplete {
@@ -221,7 +256,7 @@ private fun startAnimation(@AnimRes animRes: Int): IO<(View) -> Completable> =
                 view.setBackgroundColor(Color.WHITE)
 
             Completable.create { e ->
-                val animation = AnimationUtils.loadAnimation(realworld.activity, animRes)
+                val animation = AnimationUtils.loadAnimation(view.context, animRes)
                 animation.setAnimationListener(object : Animation.AnimationListener {
                     override fun onAnimationStart(animation: Animation) {
                         logger.trace("start anim")
@@ -241,7 +276,7 @@ private fun startAnimation(@AnimRes animRes: Int): IO<(View) -> Completable> =
         }
     }
 
-fun getItem(item: ItemState): IO<State<FragmentTransaction, FragmentItem>> =
+fun getItem(item: ItemState): IO<State<Transaction, FragmentItem>> =
         getFragmentInfo(item)
                 .flatMap { f ->
                     if (f != null)
@@ -251,43 +286,26 @@ fun getItem(item: ItemState): IO<State<FragmentTransaction, FragmentItem>> =
                 }
 
 fun getFragmentInfo(state: ItemState): IO<FragmentItem?> =
-        state { realWorld -> realWorld.fragmentCollection[state.hashTag] }
+        state { realWorld ->
+            realWorld.activityStore.values.flatMap { it.fragmentCollection.values }
+                .firstOrNull { it.hashKey == state.hashTag }
+        }
 
-fun putNewFragment(item: ItemState): IO<State<FragmentTransaction, FragmentItem>> {
+fun putNewFragment(item: ItemState): IO<State<Transaction, FragmentItem>> {
     return state { realworld ->
-        state { transaction ->
-            val fragmentItem = createNewFragment()(realworld.activity.stackManager, item)
+        state { (activityItem, transaction) ->
+            val fragment = item.creator.create()
 
-            transaction.add(realworld.fragmentId, fragmentItem.fragment, fragmentItem.hashTag)
-            realworld.fragmentCollection
-                    .put(fragmentItem.hashTag, fragmentItem)
+            val fragmentItem = activityItem.fragmentCollection.createData(item.hashTag,
+                    fragment as ManageableFragment,
+                    fragment as FragmentLifecycleOwner)
+
+            transaction.add(activityItem.fragmentId, fragmentItem.fragment.fragment, fragmentItem.hashKey)
 
             fragmentItem
         }
     }
 }
-
-fun createNewFragment(): (StackManager, ItemState) -> FragmentItem =
-    { stackManager, state ->
-        val fragment = Single.just<String>(state.clazz)
-                .map(getClazz())
-                .map(getNewInstance())
-                .map(cast<BaseManagerFragment>())
-                .blockingGet()
-
-        val controller = FragmentController()
-
-        val fragmentItem = FragmentItem(
-                fragment = fragment,
-                controller = controller,
-                stackTag = state.stackTag,
-                hashTag = state.hashTag
-        )
-
-        fragment.init(stackManager, controller, fragmentItem)
-
-        fragmentItem
-    }
 
 fun getClazzName(): (Intent) -> String = { it.component.className }
 

@@ -1,58 +1,84 @@
 package indi.yume.tools.fragmentmanager
 
+import android.support.annotation.CheckResult
+import android.support.v4.app.Fragment
 import indi.yume.tools.fragmentmanager.event.*
 import indi.yume.tools.fragmentmanager.exception.DoEffectException
 import indi.yume.tools.fragmentmanager.functions.ActionTrunk
 import indi.yume.tools.fragmentmanager.functions.toTrunk
 import indi.yume.tools.fragmentmanager.model.ItemState
 import indi.yume.tools.fragmentmanager.model.ManagerState
+import io.reactivex.Single
 import io.reactivex.functions.Consumer
 
 /**
  * Created by yume on 17-4-13.
  */
 
-fun StackManager.start(startBuilder: StartBuilder): Unit {
-    dispatch { state ->
-        val currentTag = state.currentTag
-        val backItem = state.getCurrentTop()
+sealed class FragmentCreator {
+    abstract fun create(): Fragment
+}
+
+data class ClassCreator(val clazz: Class<*>) : FragmentCreator() {
+    override fun create(): Fragment = clazz.newInstance() as Fragment
+}
+
+data class InstantsCreator(val fragment: Fragment) : FragmentCreator() {
+    override fun create(): Fragment = fragment
+}
+
+
+@CheckResult
+fun ActivityItem.start(startBuilder: StartBuilder): Single<StateData> {
+    return ApplicationStore.stackManager.dispatch { state ->
+        val activityState = state.getState(hashKey) ?: return@dispatch EmptyAction()
+
+        val currentStack = activityState.currentStack
+        val backItem = activityState.getCurrentTop()
         val backItemHashTag = backItem?.hashTag
 
-        if (currentTag == null)
+        if (currentStack == null)
             throw DoEffectException("start new item must at a stack")
 
-        AddAction(currentTag, ItemState(currentTag, backItemHashTag, startBuilder))
+        AddAction(currentStack, ItemState(currentStack, backItemHashTag, startBuilder))
     }
 }
 
-fun StackManager.deleteItem(targetTag: String, hashTag: String) {
-    dispatch { state ->
-        val targetItem = state.getItem(targetTag, hashTag)
+@CheckResult
+fun ActivityItem.deleteItem(targetTag: String, hashTag: String): Single<StateData> {
+    return ApplicationStore.stackManager.dispatch { state ->
+        val activityState = state.getState(hashKey) ?: return@dispatch EmptyAction()
+        val targetItem = activityState.getItem(targetTag, hashTag)
+
         targetItem?.run { DeleteAction(targetTag, this.hashTag) } ?: EmptyAction()
     }
 }
 
-fun StackManager.switchToStackByTag(tag: String, defaultClass: Class<out BaseManagerFragment>?) {
-    dispatch { state ->
-        val currentTag = state.currentTag
+@CheckResult
+fun ActivityItem.switchToStackByTag(tag: String, defaultFragment: FragmentCreator?): Single<StateData> {
+    return ApplicationStore.stackManager.dispatch { state ->
+        val activityState = state.getState(hashKey) ?: return@dispatch EmptyAction()
+        val currentTag = activityState.currentStack
 
         SwitchAction(currentTag, tag,
-                if(defaultClass != null) ItemState.empty(tag, defaultClass) else null)
+                if(defaultFragment != null) ItemState.empty(tag, defaultFragment) else null)
     }
 }
 
-fun StackManager.restore(state: ManagerState) {
-    dispatch(TransactionAction(listOf(
-            SwitchAction(targetTag = null).toTrunk(),
+@CheckResult
+fun ActivityItem.restore(state: ManagerState): Single<StateData> {
+    val activityState = state.getState(hashKey) ?: return ApplicationStore.stackManager.bind().firstOrError()
+
+    return ApplicationStore.stackManager.dispatch(TransactionAction(listOf(
+            SwitchAction(targetStack = null).toTrunk(),
             GenAction { s, _ ->
-                s.stackMap.nextItem()?.let { DeleteAction(it.stackTag, it.hashTag) }
+                val middleState = s.getState(hashKey) ?: return@GenAction EmptyAction()
+                middleState.stackMap.nextItem()?.let { DeleteAction(it.stackTag, it.hashTag) }
             }.toTrunk(),
-            TransactionAction(state.stackMap.allValue().map { AddAction(it.stackTag, it).toTrunk() }).toTrunk(),
-            { if(state.currentTag != null) SwitchAction(targetTag = state.currentTag) else EmptyAction() }
+            TransactionAction(activityState.stackMap.allValue().map { AddAction(it.stackTag, it).toTrunk() }).toTrunk(),
+            { if(activityState.currentStack != null) SwitchAction(targetStack = activityState.currentStack) else EmptyAction() }
     )))
 }
-
-fun StackManager.getState(func: Consumer<ManagerState>) = dispatch(CallbackAction { func.accept(it) })
 
 private fun <K, V> Map<K, List<V>>.allValue(): List<V> {
     val valueLists = values

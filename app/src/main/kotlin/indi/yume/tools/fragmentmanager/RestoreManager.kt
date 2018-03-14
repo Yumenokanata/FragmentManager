@@ -14,31 +14,31 @@ import java.util.*
  */
 
 object RestoreManager {
-    val savedInstanceStateMap: MutableMap<String, ResultData> = Hashtable<String, ResultData>()
+    val savedInstanceStateMap: MutableMap<FragmentKey, ResultData> = Hashtable<FragmentKey, ResultData>()
 
     private val random = Random()
 
-    fun onCreate(savedInstanceState: Bundle?, tag: String): String {
-        val data = savedInstanceStateMap[tag] ?: ResultData()
-        savedInstanceStateMap.put(tag,
+    fun onCreate(savedInstanceState: Bundle?, key: FragmentKey): FragmentKey {
+        val data = savedInstanceStateMap[key] ?: ResultData()
+        savedInstanceStateMap.put(key,
                 data.copy(hasSaveSate = false)
         )
 
-        return tag
+        return key
     }
 
-    fun onSaveInstanceState(tag: String, outState: Bundle?): Bundle? {
-        savedInstanceStateMap.mapKey(tag) { it.copy(hasSaveSate = true) }
+    fun onSaveInstanceState(key: FragmentKey, outState: Bundle?): Bundle? {
+        savedInstanceStateMap.mapKey(key) { it.copy(hasSaveSate = true) }
 
         return outState
     }
 
-    fun onDestroy(tag: String) {
-        if (savedInstanceStateMap.containsKey(tag))
-            if (savedInstanceStateMap[tag]?.hasSaveSate ?: false) {
-                savedInstanceStateMap.mapKey(tag) { it.copy(hasSaveSate = false) }
+    fun onDestroy(key: FragmentKey) {
+        if (savedInstanceStateMap.containsKey(key))
+            if (savedInstanceStateMap[key]?.hasSaveSate ?: false) {
+                savedInstanceStateMap.mapKey(key) { it.copy(hasSaveSate = false) }
             } else {
-                val data = savedInstanceStateMap.remove(tag)
+                val data = savedInstanceStateMap.remove(key)
                 data?.onResultSubject?.onComplete()
             }
     }
@@ -58,8 +58,8 @@ object RestoreManager {
 //        }
 //    }
 
-    fun startFragmentForRx(tag: String,
-                           stackManager: StackManager,
+    fun startFragmentForRx(key: FragmentKey,
+                           activity: ActivityItem,
                            builder: RxStartBuilder): Single<Pair<Int, Bundle>> {
         val intent = builder.getIntent()
         val enableAnimation = builder.isEnableAnimation
@@ -73,21 +73,20 @@ object RestoreManager {
                     enableAnimation
             ).withAnimData(anim)
 
-            savedInstanceStateMap[tag]!!.onResultSubject
+            activity.start(startBuilder)
+                    .flatMapObservable { savedInstanceStateMap[key]!!.onResultSubject }
                     .subscribe(
                             { tuple ->
                                 if (requestCode == tuple.first)
                                     emitter.onSuccess(tuple.second to tuple.third)
                             },
                             { emitter.onError(it) },
-                            { if(!emitter.isDisposed) emitter.onError(RxStartException("Fragment has been destroyed"))})
-
-            stackManager.start(startBuilder)
+                            { if (!emitter.isDisposed) emitter.onError(RxStartException("Fragment has been destroyed")) })
         }
     }
 
-    fun onResult(tag: String, requestCode: Int, resultCode: Int, data: Bundle?) =
-        savedInstanceStateMap[tag]?.onResultSubject?.onNext(Triple(requestCode, resultCode, data ?: Bundle()))
+    fun onResult(key: FragmentKey, requestCode: Int, resultCode: Int, data: Bundle?) =
+        savedInstanceStateMap[key]?.onResultSubject?.onNext(Triple(requestCode, resultCode, data ?: Bundle()))
 }
 
 fun <K, V> MutableMap<K, V>.mapKey(key: K, mapping: (V) -> V): V? =

@@ -11,7 +11,7 @@ val TAGS = arrayOf("tag0", "tag1", "tag2", "tag3")
 val ERROR_TAG = "ErrorTag"
 val ERROR_HASH_TAG = "ErrorHashTag"
 
-val state: ManagerState = ManagerState(
+val state: ActivityStackState = ActivityStackState(
         mapOf(
                 TAGS[0] to listOf(),
                 TAGS[1] to listOf(ItemState.empty(TAGS[1], String::class.java)),
@@ -31,7 +31,7 @@ class ManagerStateTest {
     fun getCurrentStackTest() {
         assertEquals(null, state.getCurrentStack())
 
-        val newState = state.copy(currentTag = TAGS[0])
+        val newState = state.copy(currentStack = TAGS[0])
         assertEquals(newState.stackMap.get(TAGS[0]), newState.getCurrentStack())
     }
 
@@ -39,10 +39,10 @@ class ManagerStateTest {
     fun isCurrentStackEmptyTest() {
         assert(state.isCurrentStackEmpty())
 
-        val tag0State = state.copy(currentTag = TAGS[0])
+        val tag0State = state.copy(currentStack = TAGS[0])
         assert(tag0State.isCurrentStackEmpty())
 
-        val tag1State = state.copy(currentTag = TAGS[1])
+        val tag1State = state.copy(currentStack = TAGS[1])
         assertFalse(tag1State.isCurrentStackEmpty())
     }
 
@@ -50,10 +50,10 @@ class ManagerStateTest {
     fun getCurrentTopTest() {
         assertEquals(null, state.getCurrentTop())
 
-        val tag0State = state.copy(currentTag = TAGS[0])
+        val tag0State = state.copy(currentStack = TAGS[0])
         assertEquals(null, tag0State.getCurrentTop())
 
-        val tag1State = state.copy(currentTag = TAGS[1])
+        val tag1State = state.copy(currentStack = TAGS[1])
         assertEquals(tag1State.stackMap.get(TAGS[1])!!.last(), tag1State.getCurrentTop())
     }
 

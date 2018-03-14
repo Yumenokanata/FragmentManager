@@ -1,8 +1,8 @@
 package indi.yume.tools.fragmentmanager.functions
 
+import indi.yume.tools.fragmentmanager.RealWorld
 import indi.yume.tools.fragmentmanager.event.Action
 import indi.yume.tools.fragmentmanager.model.ManagerState
-import indi.yume.tools.fragmentmanager.model.RealWorld
 
 /**
  * Created by yume on 17-4-11.

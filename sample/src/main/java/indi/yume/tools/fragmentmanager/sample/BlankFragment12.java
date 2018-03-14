@@ -1,32 +1,20 @@
 package indi.yume.tools.fragmentmanager.sample;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.jetbrains.annotations.NotNull;
-
-import indi.yume.tools.fragmentmanager.ActionUtilKt;
-import indi.yume.tools.fragmentmanager.BaseManagerFragment;
-import indi.yume.tools.fragmentmanager.StackManager;
-import indi.yume.tools.fragmentmanager.StartBuilder;
+import indi.yume.tools.fragmentmanager.DefaultManagerFragment;
 import indi.yume.tools.fragmentmanager.anno.OnHideMode;
 import indi.yume.tools.fragmentmanager.anno.OnShowMode;
-import indi.yume.tools.fragmentmanager.event.Action;
-import indi.yume.tools.fragmentmanager.event.CallbackAction;
-import indi.yume.tools.fragmentmanager.model.ManagerState;
-import indi.yume.tools.fragmentmanager.model.RealWorld;
-import io.reactivex.Completable;
-import kotlin.Unit;
-import kotlin.jvm.functions.Function1;
 
 /**
  * Created by yume on 16-4-21.
  */
-public class BlankFragment12 extends BaseManagerFragment {
+public class BlankFragment12 extends DefaultManagerFragment {
 
 
     public BlankFragment12() {
@@ -44,8 +32,9 @@ public class BlankFragment12 extends BaseManagerFragment {
 //    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
         System.out.println(this.getClass().getSimpleName() + ": onCreateView");
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_blank_fragment12, container, false);
@@ -94,5 +83,11 @@ public class BlankFragment12 extends BaseManagerFragment {
     public void onHide(@NonNull OnHideMode hideMode) {
         super.onHide(hideMode);
         System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.toString(hideMode));
+    }
+
+    @Override
+    @NonNull
+    public Fragment getFragment() {
+        return this;
     }
 }

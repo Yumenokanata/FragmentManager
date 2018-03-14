@@ -2,6 +2,8 @@ package indi.yume.tools.fragmentmanager.model
 
 import android.content.Intent
 import android.os.Bundle
+import indi.yume.tools.fragmentmanager.ClassCreator
+import indi.yume.tools.fragmentmanager.FragmentCreator
 import indi.yume.tools.fragmentmanager.StartBuilder
 
 /**
@@ -9,7 +11,7 @@ import indi.yume.tools.fragmentmanager.StartBuilder
  */
 
 data class ItemState(
-    val clazz: String,
+    val creator: FragmentCreator,
 
     val fromIntent: Intent?,
     val animData: AnimData?,
@@ -22,8 +24,8 @@ data class ItemState(
     val resultCode: Int,
     val resultData: Bundle?) {
 
-    constructor(stackTag: String, clazz: Class<*>) : this(
-            clazz = clazz.name,
+    constructor(stackTag: String, creator: FragmentCreator) : this(
+            creator = creator,
             fromIntent = null,
             animData = AnimData(),
             stackTag = stackTag,
@@ -37,7 +39,7 @@ data class ItemState(
     constructor(targetTag: String,
                 backItemHashTag: String?,
                 builder: StartBuilder) : this(
-            clazz = builder.intent.component.className,
+            creator = ClassCreator(Class.forName(builder.intent.component.className)),
             fromIntent = builder.intent,
             animData = builder.anim,
             stackTag = targetTag,
@@ -57,12 +59,16 @@ data class ItemState(
 
     companion object {
 
-        fun empty(stackTag: String, backTag: String, clazz: Class<*>): ItemState {
-            return ItemState(stackTag, clazz).copy(backItemHashTag = backTag)
+        fun empty(stackTag: String, backTag: String, creator: FragmentCreator): ItemState {
+            return ItemState(stackTag, creator).copy(backItemHashTag = backTag)
+        }
+
+        fun empty(stackTag: String, creator: FragmentCreator): ItemState {
+            return ItemState(stackTag, creator)
         }
 
         fun empty(stackTag: String, clazz: Class<*>): ItemState {
-            return ItemState(stackTag, clazz)
+            return ItemState(stackTag, ClassCreator(clazz))
         }
     }
 }

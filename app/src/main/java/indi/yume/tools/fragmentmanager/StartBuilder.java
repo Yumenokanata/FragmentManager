@@ -65,11 +65,11 @@ public class StartBuilder {
                 .build();
     }
 
-    public void start(BaseManagerFragment fragment) {
+    public void start(ManageableFragment fragment) {
         fragment.start(this);
     }
 
-    public void start(BaseFragmentManagerActivity activity) {
+    public void start(ManageableActivity activity) {
         activity.start(this);
     }
 

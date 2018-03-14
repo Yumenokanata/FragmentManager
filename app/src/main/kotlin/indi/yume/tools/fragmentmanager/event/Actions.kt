@@ -4,6 +4,7 @@ import android.os.Bundle
 import indi.yume.tools.fragmentmanager.*
 import indi.yume.tools.fragmentmanager.exception.DoEffectException
 import indi.yume.tools.fragmentmanager.functions.ActionTrunk
+import indi.yume.tools.fragmentmanager.functions.playNull
 import indi.yume.tools.fragmentmanager.model.*
 import io.reactivex.Completable
 import java.lang.UnsupportedOperationException
@@ -12,61 +13,96 @@ import java.lang.UnsupportedOperationException
  * Created by yume on 17-4-10.
  */
 
-sealed class Action {
+abstract class Action {
     abstract fun reduce(oldState: ManagerState): ManagerState
 
     abstract fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable
 }
 
-data class AddAction(val targetTag: String, val foreItem: ItemState) : Action() {
+abstract class TargetAction(val activityKey: (ManagerState) -> ActivityKey?,
+                            val commitFun: CommitFun) : Action() {
+    override fun reduce(oldState: ManagerState): ManagerState =
+            oldState.doForTargetItem(activityKey(oldState)) { reduce(it) }
 
-    override fun reduce(oldState: ManagerState): ManagerState {
+    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable =
+            Completable.defer {
+                playNull {
+                    val topKey = oldState.currentActivity.bind()
+                    val activityItem = realWorld.getActivityData(topKey).bind()
+                    val oldTopState = oldState.getState(topKey).bind()
+                    val newTopState = newState.getState(topKey).bind()
+
+                    effect(realWorld, activityItem, oldTopState, newTopState)
+                } ?: Completable.complete()
+            }
+
+    abstract fun reduce(oldState: ActivityStackState): ActivityStackState
+
+    abstract fun effect(realWorld: RealWorld, targetActivity: ActivityItem, oldState: ActivityStackState, newState: ActivityStackState): Completable
+
+    companion object {
+        val defaultActivityKey: (ManagerState) -> ActivityKey? = { it.currentActivity }
+
+        val defaultCommit: CommitFun = commit
+    }
+}
+
+class AddAction(val targetStack: StackKey, val foreItem: ItemState,
+                     activityKey: (ManagerState) -> ActivityKey? = defaultActivityKey,
+                     commitFun: CommitFun = defaultCommit) : TargetAction(activityKey, commitFun) {
+
+    override fun reduce(oldState: ActivityStackState): ActivityStackState {
         val index = if(foreItem.backItemHashTag != null)
-            oldState.getIndex(targetTag, foreItem.backItemHashTag).first
+            oldState.getIndex(targetStack, foreItem.backItemHashTag).first
         else -1
 
         return if(index >= 0)
-            oldState.plusAt(targetTag, index + 1, foreItem)
+            oldState.plusAt(targetStack, index + 1, foreItem)
         else
-            oldState.plus(targetTag, foreItem)
+            oldState.plus(targetStack, foreItem)
     }
 
-    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
-        val currentTag = newState.currentTag
-        val backItem = newState.getItem(targetTag, foreItem.backItemHashTag)
+    override fun effect(realWorld: RealWorld, targetActivity: ActivityItem,
+                        oldState: ActivityStackState, newState: ActivityStackState): Completable {
+        val currentStack = newState.currentStack
+        val backItem = newState.getItem(targetStack, foreItem.backItemHashTag)
 
-        if (newState.getTop(targetTag) === foreItem) {
-            if (backItem != null && currentTag == targetTag)
-                return commit(realWorld.fragmentManager) { transaction ->
-                    val foreFrag = getItem(foreItem)(realWorld).second(transaction).second
-                    val backFrag = getItem(backItem)(realWorld).second(transaction).second
+        if (newState.getTop(targetStack) === foreItem) {
+            if (backItem != null && currentStack == targetStack)
+                return commitFun(targetActivity.activity.provideFragmentManager) { transaction ->
+                    val transPair = targetActivity to transaction
+
+                    val foreFrag = getItem(foreItem)(realWorld).second(transPair).second
+                    val backFrag = getItem(backItem)(realWorld).second(transPair).second
 
                     showFragmentWithAnim(foreFrag to foreItem, backFrag to backItem)(realWorld)
-                            .second(transaction)
+                            .second(transPair)
                             .second
                 }
 
             //Has back item but target tag is not current tag.
             if (backItem != null)
-                return commit(realWorld.fragmentManager) { transaction ->
-                    val foreFrag = getItem(foreItem)(realWorld).second(transaction).second
-                    val backFrag = getItem(backItem)(realWorld).second(transaction).second
+                return commitFun(targetActivity.activity.provideFragmentManager) { transaction ->
+                    val transPair = targetActivity to transaction
+
+                    val foreFrag = getItem(foreItem)(realWorld).second(transPair).second
+                    val backFrag = getItem(backItem)(realWorld).second(transPair).second
 
                     val completable = showFragmentNoAnim(foreFrag, backFrag)(realWorld)
-                            .second(transaction)
+                            .second(transPair)
                             .second
-                    if(currentTag != targetTag)
-                        transaction.hide(foreFrag.fragment)
+                    if(currentStack != targetStack)
+                        transaction.hide(foreFrag.fragment.fragment)
 
                     completable
                 }
 
             //No back item or target tag is not current tag.
-            return commit(realWorld.fragmentManager) { transaction ->
-                val foreFrag = getItem(foreItem)(realWorld).second(transaction).second
+            return commitFun(targetActivity.activity.provideFragmentManager) { transaction ->
+                val foreFrag = getItem(foreItem)(realWorld).second(targetActivity to transaction).second
 
-                if(currentTag != targetTag)
-                    transaction.hide(foreFrag.fragment)
+                if(currentStack != targetStack)
+                    transaction.hide(foreFrag.fragment.fragment)
 
                 showCallback(foreFrag)
             }
@@ -77,40 +113,46 @@ data class AddAction(val targetTag: String, val foreItem: ItemState) : Action() 
     }
 }
 
-data class DeleteAction(val targetTag: String,
-                        val targetHashTag: String) : Action() {
+class DeleteAction(val targetTag: String,
+                   val targetHashTag: String,
+                   activityKey: (ManagerState) -> ActivityKey? = defaultActivityKey,
+                   commitFun: CommitFun = defaultCommit) : TargetAction(activityKey, commitFun) {
 
-    override fun reduce(oldState: ManagerState): ManagerState {
+    override fun reduce(oldState: ActivityStackState): ActivityStackState {
         return oldState.minus(targetTag, targetHashTag).first
     }
 
-    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
+    override fun effect(realWorld: RealWorld, targetActivity: ActivityItem, oldState: ActivityStackState, newState: ActivityStackState): Completable {
         if(oldState == newState)
             return Completable.complete()
 
-        val currentTag = newState.currentTag
+        val currentTag = newState.currentStack
         val foreItem = oldState.getItem(targetTag, targetHashTag) ?: return Completable.complete()
 
         val backItem = newState.getItem(targetTag, foreItem.backItemHashTag) ?: newState.getTop(targetTag)
 
         if (foreItem.isBackItem(backItem) && currentTag == targetTag) {
-            return commit(realWorld.fragmentManager) { transaction ->
-                val foreFrag = getItem(foreItem)(realWorld).second(transaction).second
-                val backFrag = if(backItem != null) getItem(backItem)(realWorld).second(transaction).second else null
+            return commitFun(targetActivity.activity.provideFragmentManager) { transaction ->
+                val transPair = targetActivity to transaction
+
+                val foreFrag = getItem(foreItem)(realWorld).second(transPair).second
+                val backFrag = if(backItem != null) getItem(backItem)(realWorld).second(transPair).second else null
                 val backData = if(backFrag != null && backItem != null) backFrag to backItem else null
 
                 removeFragmentWithAnim(foreFrag to foreItem, backData)(realWorld)
-                        .second(transaction)
+                        .second(transPair)
                         .second
             }
         } else {
-            return commit(realWorld.fragmentManager) { transaction ->
-                val foreFrag = getItem(foreItem)(realWorld).second(transaction).second
-                val backFrag = if(backItem != null) getItem(backItem)(realWorld).second(transaction).second else null
+            return commitFun(targetActivity.activity.provideFragmentManager) { transaction ->
+                val transPair = targetActivity to transaction
+
+                val foreFrag = getItem(foreItem)(realWorld).second(transPair).second
+                val backFrag = if(backItem != null) getItem(backItem)(realWorld).second(transPair).second else null
                 val backData = if(backFrag != null && backItem != null) backFrag to backItem else null
 
                 removeFragmentNoAnim(foreFrag to foreItem, backData)(realWorld)
-                        .second(transaction)
+                        .second(transPair)
                         .second
             }
         }
@@ -124,13 +166,15 @@ class EmptyAction : Action() {
             Completable.complete()
 }
 
-data class ModifyAction(
+class ModifyAction(
         val targetTag: String,
         val itemTag: String,
         val animData: AnimData?,
         val resultCode: Int,
-        val resultData: Bundle?
-) : Action() {
+        val resultData: Bundle?,
+
+        activityKey: (ManagerState) -> ActivityKey? = defaultActivityKey,
+        commitFun: CommitFun = defaultCommit) : TargetAction(activityKey, commitFun) {
 
     constructor(state: ItemState): this(
             targetTag = state.stackTag,
@@ -140,41 +184,45 @@ data class ModifyAction(
             resultData = state.resultData
     )
 
-    override fun reduce(oldState: ManagerState): ManagerState =
+    override fun reduce(oldState: ActivityStackState): ActivityStackState =
         oldState.modifyItem(targetTag, itemTag) { oldItem ->
             oldItem.copy(animData = animData,
                     resultCode = resultCode,
                     resultData = resultData)
         }
 
-    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable =
+    override fun effect(realWorld: RealWorld, targetActivity: ActivityItem, oldState: ActivityStackState, newState: ActivityStackState): Completable =
             Completable.complete()
 }
 
-data class SwitchAction(
+class SwitchAction(
         val backTag: String? = null,
-        val targetTag: String?,
-        val defaultItem: ItemState? = null
-) : Action() {
+        val targetStack: StackKey?,
+        val defaultItem: ItemState? = null,
 
-    override fun reduce(oldState: ManagerState): ManagerState {
-        val newState = oldState.copy(currentTag = targetTag)
-        if (targetTag != null && defaultItem != null && newState.isCurrentStackEmpty())
-            return newState.plus(targetTag, defaultItem)
+        activityKey: (ManagerState) -> ActivityKey? = defaultActivityKey,
+        commitFun: CommitFun = defaultCommit) : TargetAction(activityKey, commitFun) {
+
+    override fun reduce(oldState: ActivityStackState): ActivityStackState {
+        val newState = oldState.copy(currentStack = targetStack)
+        if (targetStack != null && defaultItem != null && newState.isCurrentStackEmpty())
+            return newState.plus(targetStack, defaultItem)
         return newState
     }
 
-    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
-        val backItem = backTag?.run { newState.getTop(this) }
-        val foreItem = targetTag?.let { newState.getTop(it) }
+    override fun effect(realWorld: RealWorld, targetActivity: ActivityItem, oldState: ActivityStackState, newState: ActivityStackState): Completable {
+        val backItem = backTag?.let { newState.getTop(it) }
+        val foreItem = targetStack?.let { newState.getTop(it) }
 
         if (backItem != null || foreItem != null)
-            return commit(realWorld.fragmentManager) { transaction ->
-                val foreFrag = foreItem?.let { getItem(it)(realWorld).second(transaction).second }
-                val backFrag = backItem?.let { getItem(it)(realWorld).second(transaction).second }
+            return commitFun(targetActivity.activity.provideFragmentManager) { transaction ->
+                val transPair = targetActivity to transaction
+
+                val foreFrag = foreItem?.let { getItem(it)(realWorld).second(transPair).second }
+                val backFrag = backItem?.let { getItem(it)(realWorld).second(transPair).second }
 
                 switchTag(foreFrag, backFrag)(realWorld)
-                        .second(transaction)
+                        .second(transPair)
                         .second
             }
 
@@ -189,7 +237,8 @@ class FinishAction : Action() {
 
     override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable =
             Completable.create { e ->
-                realWorld.activity.finish()
+                oldState.currentActivity?.let { realWorld.getActivityData(it) }
+                        ?.activity?.activity?.finish()
                 e.onComplete()
             }
 }
@@ -201,69 +250,105 @@ class BackAction : Action() {
     }
 
     override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
-        val list = newState.getCurrentStack()
+        return playNull {
+            val currentActivityKey = oldState.currentActivity.bind()
+            val currentActivity = oldState.getState(currentActivityKey).bind()
+            val currentActivityItem = realWorld.getActivityData(currentActivityKey).bind()
 
-        if (list == null || list.isEmpty() || list.size == 1) {
-            if(!realWorld.activity.onBackPressed(list?.size ?: 0))
-                realWorld.activity.stackManager.dispatch { FinishAction() }
-            return Completable.complete()
-        }
+            val list = currentActivity.getCurrentStack()
 
-        val (clazz, fromIntent, animData, stackTag, hashTag) = list.last()
-        val topFragment = realWorld.fragmentCollection[hashTag]
-        if (topFragment?.fragment?.onBackPressed() ?: false || realWorld.activity.onBackPressed(list.size))
-            return Completable.complete()
+            if (list == null || list.isEmpty() || list.size == 1) {
+                return@playNull if(!currentActivityItem.activity.onBackPressed(list?.size ?: 0))
+                    ApplicationStore.stackManager.dispatch { FinishAction() }.toCompletable()
+                else
+                    null
+            }
 
-        realWorld.activity.stackManager.dispatch { DeleteAction(stackTag, hashTag) }
+            val (clazz, fromIntent, animData, stackTag, hashTag) = list.last()
+            val topFragment = currentActivityItem.fragmentCollection[hashTag].bind()
+            if (topFragment.fragment.onBackPressed() ?: false || currentActivityItem.activity.onBackPressed(list.size))
+                return@playNull null
 
+            return@playNull ApplicationStore.stackManager.dispatch { DeleteAction(stackTag, hashTag) }
+                    .toCompletable()
+        } ?: Completable.complete()
+    }
+}
+
+class OnCreateAction private constructor(val activityKey: ActivityKey) : Action() {
+    constructor(activity: ManageableActivity): this(ApplicationStore.activityStore.getKey(activity)
+            ?: throw NullPointerException("Must call ApplicationStore.activityStore.onCreate() first"))
+
+    override fun reduce(oldState: ManagerState): ManagerState {
+        return oldState.onCreate(activityKey)
+    }
+
+    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
         return Completable.complete()
     }
 }
 
-class OnResumeAction : Action() {
+class OnResumeAction(val activityKey: ActivityKey) : Action() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
     }
 
     override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
-        val list = oldState.getCurrentStack()
+        return playNull {
+            val targetActivity = oldState.getState(activityKey).bind()
+            val targetActivityItem = realWorld.getActivityData(activityKey).bind()
 
-        if (list != null && !list.isEmpty()) {
-            val foreItem = list.last()
-            return commit(realWorld.fragmentManager) { transaction ->
-                val foreFrag = foreItem.let { getItem(it)(realWorld).second(transaction).second }
+            val list = targetActivity.getCurrentStack().bind()
 
-                onResume()(realWorld).second(foreFrag)
+            if (!list.isEmpty()) {
+                val foreItem = list.last()
+                commit(targetActivityItem.activity.provideFragmentManager) { transaction ->
+                    val foreFrag = foreItem.let { getItem(it)(realWorld).second(targetActivityItem to transaction).second }
 
-                Completable.complete()
-            }
-        }
+                    onResume()(realWorld).second(foreFrag)
 
-        return Completable.complete()
+                    Completable.complete()
+                }
+            } else null
+        } ?: Completable.complete()
     }
 }
 
-class OnPauseAction : Action() {
+class OnPauseAction(val activityKey: ActivityKey) : Action() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
     }
 
     override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
-        val list = oldState.getCurrentStack()
+        return playNull {
+            val targetActivity = oldState.getState(activityKey).bind()
+            val targetActivityItem = realWorld.getActivityData(activityKey).bind()
 
-        if (list != null && !list.isEmpty()) {
-            val foreItem = list.last()
-            return commit(realWorld.fragmentManager) { transaction ->
-                val foreFrag = foreItem.let { getItem(it)(realWorld).second(transaction).second }
+            val list = targetActivity.getCurrentStack()
 
-                onPause()(realWorld).second(foreFrag)
+            if (list != null && !list.isEmpty()) {
+                val foreItem = list.last()
+                commit(targetActivityItem.activity.provideFragmentManager) { transaction ->
+                    val foreFrag = foreItem.let { getItem(it)(realWorld).second(targetActivityItem to transaction).second }
 
-                Completable.complete()
-            }
-        }
+                    onPause()(realWorld).second(foreFrag)
 
+                    Completable.complete()
+                }
+            } else null
+        } ?: Completable.complete()
+    }
+}
+
+class OnDestroyAction(val activityKey: ActivityKey) : Action() {
+
+    override fun reduce(oldState: ManagerState): ManagerState {
+        return oldState.onDestroy(activityKey)
+    }
+
+    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
         return Completable.complete()
     }
 }
@@ -301,4 +386,14 @@ class CallbackAction(val callback: (ManagerState) -> Unit) : Action() {
     override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
         return Completable.complete()
     }
+}
+
+class LambdaAction(val reducer: (ManagerState) -> ManagerState = { it },
+                   val effectFun: (realWorld: RealWorld, oldState: ManagerState, newState: ManagerState) -> Completable =
+                           { _, _, _ -> Completable.complete() }) : Action() {
+
+    override fun reduce(oldState: ManagerState): ManagerState = reducer(oldState)
+
+    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable =
+            effectFun(realWorld, oldState, newState)
 }
