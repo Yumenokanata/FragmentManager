@@ -69,9 +69,4 @@ public class BlankFragment11 extends DefaultManagerFragment {
             System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.toString(hideMode));
 //        System.out.println(this.getClass().getSimpleName() + ": isTopOfStack " + isTopOfStack());
         }
-
-    @Override
-    public Fragment getFragment() {
-        return this;
-    }
 }

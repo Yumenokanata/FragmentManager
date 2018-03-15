@@ -30,6 +30,8 @@ class StackManager : Store<StateData, ActionTrunk>(
     fun dispatch(action: Action): Single<StateData> =
             dispatch { action }
 
+    fun bindState(): Observable<ManagerState> = bind().map { it.newState }
+
     companion object {
         private fun reduce(oldState: ManagerState, action: Action): ManagerState {
             return action.reduce(oldState)

@@ -14,7 +14,6 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
 public class AnimData implements Serializable {
     @Builder.Default private int enterAnim = -1;
     @Builder.Default private int exitAnim = -1;
@@ -25,6 +24,12 @@ public class AnimData implements Serializable {
     }
 
     //Make for Kotlin
+    public AnimData() {
+        this.enterAnim = -1;
+        this.exitAnim = -1;
+        this.stayAnim = R.anim.stay_anim;
+    }
+
     public int getEnterAnim() {
         return enterAnim;
     }

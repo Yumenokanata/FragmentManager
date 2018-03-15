@@ -298,7 +298,7 @@ fun putNewFragment(item: ItemState): IO<State<Transaction, FragmentItem>> {
 
             val fragmentItem = activityItem.fragmentCollection.createData(item.hashTag,
                     fragment as ManageableFragment,
-                    fragment as FragmentLifecycleOwner)
+                    (fragment as ManageableFragment).fragmentLifeCycle)
 
             transaction.add(activityItem.fragmentId, fragmentItem.fragment.fragment, fragmentItem.hashKey)
 

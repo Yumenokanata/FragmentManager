@@ -65,7 +65,7 @@ sealed class ActivityLifeEvent {
 
 //</editor-fold>
 
-//<editor-fold defaultstate="collapsed" desc="Fragment Life">
+//<editor-fold desc="Fragment Life">
 sealed class FragmentLifeEvent {
     data class OnCreate(val fragment: Fragment, val savedInstanceState: Bundle?): FragmentLifeEvent()
 

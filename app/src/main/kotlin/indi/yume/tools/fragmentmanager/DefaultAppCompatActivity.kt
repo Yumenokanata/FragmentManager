@@ -3,6 +3,7 @@ package indi.yume.tools.fragmentmanager
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.support.annotation.AnimRes
 import android.support.annotation.CallSuper
 import android.support.v4.app.FragmentManager
 import android.support.v7.app.AppCompatActivity
@@ -13,17 +14,25 @@ import io.reactivex.subjects.Subject
  */
 
 abstract class DefaultAppCompatActivity : AppCompatActivity(), ManageableActivity, ActivityLifecycleOwner {
+    @AnimRes
+    override var fragmentExitAnim: Int = R.anim.fragment_left_exit
+    @AnimRes
+    override var fragmentEnterAnim = R.anim.fragment_left_enter
+    @AnimRes
+    override var activityEnterStayAnim = R.anim.stay_anim
+
 
     override val lifeSubject: Subject<ActivityLifeEvent> = ActivityLifecycleOwner.defaultLifeSubject()
 
     override val activity: Activity = this
+
+    override val activityLifeCycle: ActivityLifecycleOwner = this
 
     override val provideFragmentManager: FragmentManager
         get() = supportFragmentManager
 
     @CallSuper
     override fun onBackPressed() {
-        super<AppCompatActivity>.onBackPressed()
         super<ManageableActivity>.onBackPressed()
     }
 

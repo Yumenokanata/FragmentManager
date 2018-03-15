@@ -20,9 +20,11 @@ import kotlin.collections.HashMap
  * Created by yume on 18-3-12.
  */
 
-typealias ActivityKey = String
-typealias StackKey = String
-typealias FragmentKey = String
+typealias StringKey = String
+
+typealias ActivityKey = StringKey
+typealias StackKey = StringKey
+typealias FragmentKey = StringKey
 
 typealias RealWorld = ApplicationStore
 

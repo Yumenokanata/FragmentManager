@@ -25,6 +25,8 @@ interface ManageableFragment {
 
     val fragment: Fragment
 
+    val fragmentLifeCycle: FragmentLifecycleOwner
+
     val stackKey: StackKey
         get() = playNull {
             val activityKey = activityItem.bind().hashKey
@@ -35,6 +37,12 @@ interface ManageableFragment {
 
     val stackState: StateData
         get() = ApplicationStore.stackManager.bind().blockingFirst()
+
+    fun provideEnterAnim(): Int = -1
+
+    fun provideExitAnim(): Int = -1
+
+    fun provideStayAnim(): Int = -1
 
     //<editor-fold desc="Override Fragment lifecycle">
     fun onCreate(savedInstanceState: Bundle?) {
@@ -69,14 +77,7 @@ interface ManageableFragment {
 
 
     //<editor-fold desc="Addition Function">
-    fun start(builder: StartBuilder) = activityItem?.start(builder)?.defaultSubscribe()
-
-    fun startForObservable(rxStartBuilder: RxStartBuilder): Single<Pair<Int, Bundle>> = playNull {
-        val fragmentVal = fragmentItem.bind()
-        val activityVal = activityItem.bind()
-
-        RestoreManager.startFragmentForRx(fragmentVal.hashKey, activityVal, rxStartBuilder)
-    } ?: Single.error<Pair<Int, Bundle>>(RuntimeException("Fragment not found at FragmentManager"))
+    fun start(builder: StartBuilder) = activityItem?.activity?.start(builder)
 
 
     fun finish() {

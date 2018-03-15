@@ -14,7 +14,7 @@ import java.util.*
  */
 
 object RestoreManager {
-    val savedInstanceStateMap: MutableMap<FragmentKey, ResultData> = Hashtable<FragmentKey, ResultData>()
+    val savedInstanceStateMap: MutableMap<StringKey, ResultData> = Hashtable<FragmentKey, ResultData>()
 
     private val random = Random()
 
@@ -43,20 +43,20 @@ object RestoreManager {
             }
     }
 
-//    fun startActivityForObservable(tag: String, activity: Activity, intent: Intent): Single<Pair<Int, Bundle>> {
-//        val resultData = savedInstanceStateMap.get(tag) ?: return Single.error(RuntimeException("Do not have this Activity state: tag=" + tag))
-//
-//        return Single.create { emitter ->
-//            val requestCode = random.nextInt() and 0x0000ffff
-//            activity.startActivityForResult(intent, requestCode)
-//            resultData.onResultSubject.subscribe(
-//                    { tuple ->
-//                        if (requestCode == tuple.first)
-//                            emitter.onSuccess(tuple.second to tuple.third)
-//                    },
-//                    { emitter.onError(it) })
-//        }
-//    }
+    fun startActivityForObservable(key: FragmentKey, activity: Activity, intent: Intent): Single<Pair<Int, Bundle>> {
+        val resultData = savedInstanceStateMap.get(key) ?: return Single.error(RuntimeException("Do not have this Activity state: tag=" + key))
+
+        return Single.create { emitter ->
+            val requestCode = random.nextInt() and 0x0000ffff
+            activity.startActivityForResult(intent, requestCode)
+            resultData.onResultSubject.subscribe(
+                    { tuple ->
+                        if (requestCode == tuple.first)
+                            emitter.onSuccess(tuple.second to tuple.third)
+                    },
+                    { emitter.onError(it) })
+        }
+    }
 
     fun startFragmentForRx(key: FragmentKey,
                            activity: ActivityItem,

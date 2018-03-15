@@ -15,9 +15,18 @@ import lombok.experimental.Wither;
 @AllArgsConstructor
 @Data
 public class StartBuilder {
+    @Wither
+    @Nullable
+    private FragmentCreator creator = null;
+
     private final Intent intent;
     @Wither
     private int requestCode = -1;
+    @Wither
+    private Class<? extends SingleBaseActivity> newActivity;
+    @Wither
+    @Nullable
+    private String targetStack = null;
     @Wither
     private boolean enableAnimation = true;
     @Wither
@@ -116,5 +125,31 @@ public class StartBuilder {
 
     public void setStayAnim(int stayAnim) {
         this.stayAnim = stayAnim;
+    }
+
+    @Nullable
+    public FragmentCreator getCreator() {
+        return creator;
+    }
+
+    public void setCreator(@Nullable FragmentCreator creator) {
+        this.creator = creator;
+    }
+
+    public Class<? extends SingleBaseActivity> getNewActivity() {
+        return newActivity;
+    }
+
+    public void setNewActivity(Class<? extends SingleBaseActivity> newActivity) {
+        this.newActivity = newActivity;
+    }
+
+    @Nullable
+    public String getTargetStack() {
+        return targetStack;
+    }
+
+    public void setTargetStack(@Nullable String targetStack) {
+        this.targetStack = targetStack;
     }
 }

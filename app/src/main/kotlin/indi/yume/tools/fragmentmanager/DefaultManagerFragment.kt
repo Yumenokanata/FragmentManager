@@ -20,6 +20,10 @@ abstract class DefaultManagerFragment : Fragment(), ManageableFragment, Fragment
 
     override val lifeSubject: Subject<FragmentLifeEvent> = FragmentLifecycleOwner.defaultLifeSubject()
 
+    override val fragment: Fragment = this
+
+    override val fragmentLifeCycle: FragmentLifecycleOwner = this
+
     override fun onCreate(savedInstanceState: Bundle?) {
         logger.debug("Fragment onCreate: ${this}")
         super<Fragment>.onCreate(savedInstanceState)

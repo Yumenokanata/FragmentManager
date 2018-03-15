@@ -1,16 +1,21 @@
 package indi.yume.tools.fragmentmanager.sample;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import indi.yume.tools.fragmentmanager.DefaultManagerFragment;
+import indi.yume.tools.fragmentmanager.RxStartBuilder;
 import indi.yume.tools.fragmentmanager.anno.OnHideMode;
 import indi.yume.tools.fragmentmanager.anno.OnShowMode;
+import io.reactivex.functions.Consumer;
+import kotlin.Pair;
 
 /**
  * Created by yume on 16-4-21.
@@ -38,21 +43,21 @@ public class BlankFragment21 extends DefaultManagerFragment {
         System.out.println(this.getClass().getSimpleName() + ": onViewCreated");
 
         final Context context = getContext();
-//        view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                RxStartBuilder.builder(new Intent(getContext(), BlankFragment22.class))
-//                        .withEnableAnimation(true)
-//                        .withNewActivity(SingleTagActivity.class)
-//                        .startForObservable(BlankFragment21.this)
-//                        .subscribe(new Action1<Tuple2<Integer, Bundle>>() {
-//                            @Override
-//                            public void call(Tuple2<Integer, Bundle> t) {
-//                                Toast.makeText(context, t.getData2().getString("result"), Toast.LENGTH_LONG).show();
-//                            }
-//                        });
-//            }
-//        });
+        view.findViewById(R.id.jump_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RxStartBuilder.builder(new Intent(getContext(), BlankFragment22.class))
+                        .withEnableAnimation(true)
+                        .withNewActivity(SingleTagActivity.class)
+                        .startForObservable(BlankFragment21.this.getFragmentItem())
+                        .subscribe(new Consumer<Pair<Integer,Bundle>>() {
+                            @Override
+                            public void accept(Pair<Integer, Bundle> t) {
+                                Toast.makeText(context, t.getSecond().getString("result"), Toast.LENGTH_LONG).show();
+                            }
+                        });
+            }
+        });
 //        view.findViewById(R.id.jump_activity_button)
 //                .setOnClickListener(new View.OnClickListener() {
 //                    @Override
@@ -91,11 +96,5 @@ public class BlankFragment21 extends DefaultManagerFragment {
     public void onHide(@NonNull OnHideMode hideMode) {
         super.onHide(hideMode);
         System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.toString(hideMode));
-    }
-
-    @Override
-    @NonNull
-    public Fragment getFragment() {
-        return this;
     }
 }

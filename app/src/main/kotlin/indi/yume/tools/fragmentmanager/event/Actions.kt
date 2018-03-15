@@ -1,5 +1,6 @@
 package indi.yume.tools.fragmentmanager.event
 
+import android.content.Intent
 import android.os.Bundle
 import indi.yume.tools.fragmentmanager.*
 import indi.yume.tools.fragmentmanager.exception.DoEffectException
@@ -7,7 +8,9 @@ import indi.yume.tools.fragmentmanager.functions.ActionTrunk
 import indi.yume.tools.fragmentmanager.functions.playNull
 import indi.yume.tools.fragmentmanager.model.*
 import io.reactivex.Completable
+import io.reactivex.Single
 import java.lang.UnsupportedOperationException
+import java.util.*
 
 /**
  * Created by yume on 17-4-10.
@@ -18,6 +21,8 @@ abstract class Action {
 
     abstract fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable
 }
+
+//<editor-fold desc="Fragment Actions">
 
 abstract class TargetAction(val activityKey: (ManagerState) -> ActivityKey?,
                             val commitFun: CommitFun) : Action() {
@@ -48,8 +53,8 @@ abstract class TargetAction(val activityKey: (ManagerState) -> ActivityKey?,
 }
 
 class AddAction(val targetStack: StackKey, val foreItem: ItemState,
-                     activityKey: (ManagerState) -> ActivityKey? = defaultActivityKey,
-                     commitFun: CommitFun = defaultCommit) : TargetAction(activityKey, commitFun) {
+                activityKey: (ManagerState) -> ActivityKey? = defaultActivityKey,
+                commitFun: CommitFun = defaultCommit) : TargetAction(activityKey, commitFun) {
 
     override fun reduce(oldState: ActivityStackState): ActivityStackState {
         val index = if(foreItem.backItemHashTag != null)
@@ -266,7 +271,7 @@ class BackAction : Action() {
 
             val (clazz, fromIntent, animData, stackTag, hashTag) = list.last()
             val topFragment = currentActivityItem.fragmentCollection[hashTag].bind()
-            if (topFragment.fragment.onBackPressed() ?: false || currentActivityItem.activity.onBackPressed(list.size))
+            if (topFragment.fragment.onBackPressed() || currentActivityItem.activity.onBackPressed(list.size))
                 return@playNull null
 
             return@playNull ApplicationStore.stackManager.dispatch { DeleteAction(stackTag, hashTag) }
@@ -274,8 +279,10 @@ class BackAction : Action() {
         } ?: Completable.complete()
     }
 }
+//</editor-fold>
 
-class OnCreateAction private constructor(val activityKey: ActivityKey) : Action() {
+//<editor-fold desc="Activity Lifecycle Actions">
+internal class OnCreateAction private constructor(val activityKey: ActivityKey) : Action() {
     constructor(activity: ManageableActivity): this(ApplicationStore.activityStore.getKey(activity)
             ?: throw NullPointerException("Must call ApplicationStore.activityStore.onCreate() first"))
 
@@ -288,7 +295,7 @@ class OnCreateAction private constructor(val activityKey: ActivityKey) : Action(
     }
 }
 
-class OnResumeAction(val activityKey: ActivityKey) : Action() {
+internal class OnResumeAction(val activityKey: ActivityKey) : Action() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
@@ -315,7 +322,7 @@ class OnResumeAction(val activityKey: ActivityKey) : Action() {
     }
 }
 
-class OnPauseAction(val activityKey: ActivityKey) : Action() {
+internal class OnPauseAction(val activityKey: ActivityKey) : Action() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
@@ -342,7 +349,7 @@ class OnPauseAction(val activityKey: ActivityKey) : Action() {
     }
 }
 
-class OnDestroyAction(val activityKey: ActivityKey) : Action() {
+internal class OnDestroyAction(val activityKey: ActivityKey) : Action() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState.onDestroy(activityKey)
@@ -352,7 +359,9 @@ class OnDestroyAction(val activityKey: ActivityKey) : Action() {
         return Completable.complete()
     }
 }
+//</editor-fold>
 
+//<editor-fold desc="Base Actions">
 class TransactionAction(val list: List<ActionTrunk>) : Action() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
@@ -397,3 +406,4 @@ class LambdaAction(val reducer: (ManagerState) -> ManagerState = { it },
     override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable =
             effectFun(realWorld, oldState, newState)
 }
+//</editor-fold>

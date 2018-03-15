@@ -1,10 +1,13 @@
 package indi.yume.tools.fragmentmanager;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 
 import indi.yume.tools.fragmentmanager.model.AnimData;
+import io.reactivex.Maybe;
+import kotlin.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Wither;
@@ -15,7 +18,16 @@ import lombok.experimental.Wither;
 @AllArgsConstructor
 @Data
 public class RxStartBuilder {
+    @Wither
+    @Nullable
+    private FragmentCreator creator = null;
+
     protected final Intent intent;
+    @Wither
+    private Class<? extends SingleBaseActivity> newActivity;
+    @Wither
+    @Nullable
+    private String targetStack = null;
     @Wither
     protected boolean enableAnimation = true;
     @Wither
@@ -57,9 +69,9 @@ public class RxStartBuilder {
                 .build();
     }
 
-//    public Maybe<Tuple2<Integer, Bundle>> startForObservable(BaseManagerFragment fragment) {
-//        return fragment.startForObservable(this);
-//    }
+    public Maybe<Pair<Integer, Bundle>> startForObservable(FragmentItem fragment) {
+        return ActionUtilKt.startForObservable(fragment, this).toMaybe();
+    }
 
 
     //Make for Kotlin
@@ -97,5 +109,31 @@ public class RxStartBuilder {
 
     public void setStayAnim(int stayAnim) {
         this.stayAnim = stayAnim;
+    }
+
+    @Nullable
+    public FragmentCreator getCreator() {
+        return creator;
+    }
+
+    public void setCreator(@Nullable FragmentCreator creator) {
+        this.creator = creator;
+    }
+
+    public Class<? extends SingleBaseActivity> getNewActivity() {
+        return newActivity;
+    }
+
+    public void setNewActivity(Class<? extends SingleBaseActivity> newActivity) {
+        this.newActivity = newActivity;
+    }
+
+    @Nullable
+    public String getTargetStack() {
+        return targetStack;
+    }
+
+    public void setTargetStack(@Nullable String targetStack) {
+        this.targetStack = targetStack;
     }
 }

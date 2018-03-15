@@ -73,10 +73,4 @@ public class BlankFragment22 extends DefaultManagerFragment {
         super.onHide(hideMode);
         System.out.println(this.getClass().getSimpleName() + ": onHide " + OnHideMode.toString(hideMode));
     }
-
-    @Override
-    @NonNull
-    public Fragment getFragment() {
-        return this;
-    }
 }
