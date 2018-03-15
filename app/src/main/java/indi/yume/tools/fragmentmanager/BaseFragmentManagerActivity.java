@@ -1,19 +1,18 @@
 package indi.yume.tools.fragmentmanager;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import indi.yume.tools.renderercalendar.R;
 import io.reactivex.Single;
 
 import java.util.*;
@@ -115,9 +114,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(fragment == null)
             return;
 
-        fragmentManager.beginTransaction()
-                .show(fragment)
-                .commitAllowingStateLoss();
+        commitFragmentTransaction(fragmentManager.beginTransaction()
+                .show(fragment));
     }
 
     void hidePreFragment() {
@@ -125,9 +123,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(fragment == null)
             return;
 
-        fragmentManager.beginTransaction()
-                .hide(fragment)
-                .commitAllowingStateLoss();
+        commitFragmentTransaction(fragmentManager.beginTransaction()
+                .hide(fragment));
     }
 
     public void setDefaultFragmentAnim(@AnimRes int enterAnim,
@@ -155,6 +152,10 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         this.fragmentEnterAnim = enterAnim;
         this.fragmentExitAnim = exitAnim;
         this.activityEnterStayAnim = activityEnterStyAnim;
+    }
+
+    public void commitFragmentTransaction(FragmentTransaction transaction) {
+        transaction.commit();
     }
 
     public boolean isShowAnimWhenFinish() {
@@ -195,7 +196,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                     if(!TextUtils.equals(tag, stackTag))
                         hideStackByTag(tag, transaction);
                 BaseManagerFragment fragment = showStackByTagNoAnim(stackTag, transaction);
-                transaction.commit();
+                commitFragmentTransaction(transaction);
                 if(fragment != null)
                     fragmentOnCreateShow(fragment);
                 currentStackTag = stackTag;
@@ -503,7 +504,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             BaseManagerFragment fragment = showStackByTagNoAnim(tag, newIntent, fragmentTransaction);
             String oldTag = currentStackTag;
             currentStackTag = tag;
-            fragmentTransaction.commitAllowingStateLoss();
+            commitFragmentTransaction(fragmentTransaction);
 
             if(fragmentMap.containsKey(oldTag) && !fragmentMap.get(oldTag).isEmpty()) {
                 List<BaseManagerFragment> list = fragmentMap.get(oldTag);
@@ -535,14 +536,14 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             clearStackByTag(tag, fragmentTransaction);
 
         if(!resetTag) {
-            fragmentTransaction.commit();
+            commitFragmentTransaction(fragmentTransaction);
             return;
         }
 
         BaseManagerFragment fragment = showStackByTagNoAnim(tag, newIntent, fragmentTransaction);
         if(fragment != null && !TextUtils.equals(tag, currentStackTag))
             fragmentTransaction.hide(fragment);
-        fragmentTransaction.commit();
+        commitFragmentTransaction(fragmentTransaction);
 
         if(fragment != null) {
             fragment.onShow(OnShowMode.ON_CREATE);
@@ -567,12 +568,12 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             clearStackByTag(currentStackTag, fragmentTransaction);
 
         if(!resetCurrentTag) {
-            fragmentTransaction.commitAllowingStateLoss();
+            commitFragmentTransaction(fragmentTransaction);
             return;
         }
 
         BaseManagerFragment fragment = showStackByTagNoAnim(currentStackTag, fragmentTransaction);
-        fragmentTransaction.commit();
+        commitFragmentTransaction(fragmentTransaction);
         if(fragment != null) {
             fragmentOnCreateShow(fragment);
         } else {
@@ -714,9 +715,9 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                                         fragment.getResultData());
                         }
 
-                        fragmentManager.beginTransaction()
-                                .remove(fragment)
-                                .commit();
+                        commitFragmentTransaction(
+                                fragmentManager.beginTransaction()
+                                        .remove(fragment));
                         fragmentMap.get(key).remove(f);
                     }
                     break;
@@ -767,8 +768,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 //            showStackByTagNoAnim(currentStackTag, fragmentTransaction1);
             fragmentTransaction.show(fragment1);
 
-            fragmentTransaction.remove(fragment)
-                    .commit();
+            commitFragmentTransaction(fragmentTransaction.remove(fragment));
             fragment1.onShow(OnShowMode.ON_BACK);
         }
     }
@@ -825,19 +825,17 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
             int exitAnim = getExitAnim(fragment);
             if(exitAnim == -1) {
-                fragmentTransaction.remove(fragment)
-                        .commit();
+                commitFragmentTransaction(fragmentTransaction.remove(fragment));
             } else {
-                fragmentTransaction.commit();
+                commitFragmentTransaction(fragmentTransaction);
 
                 startAnimation(exitAnim,
                         fragment.getView(),
                         new Runnable() {
                             @Override
                             public void run() {
-                                fragmentManager.beginTransaction()
-                                        .remove(fragment)
-                                        .commit();
+                                commitFragmentTransaction(fragmentManager.beginTransaction()
+                                        .remove(fragment));
                                 fragment1.onShow(OnShowMode.ON_BACK);
                             }
                         });
@@ -863,9 +861,8 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                             new Runnable() {
                                 @Override
                                 public void run() {
-                                    fragmentManager.beginTransaction()
-                                            .hide(backFragment)
-                                            .commit();
+                                    commitFragmentTransaction(fragmentManager.beginTransaction()
+                                            .hide(backFragment));
                                     backFragment.onHide(OnHideMode.ON_START_NEW);
                                     nextFragment.onShow(OnShowMode.ON_CREATE_AFTER_ANIM);
                                     nextFragment.setOnCreatedViewListener(null);
@@ -876,13 +873,13 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
             fragmentTransaction.show(backFragment);
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
-            fragmentTransaction.commit();
+            commitFragmentTransaction(fragmentTransaction);
         } else if(!list.isEmpty()) {
             final BaseManagerFragment backFragment = list.get(list.size() - 1);
 
             fragmentTransaction.hide(backFragment);
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
-            fragmentTransaction.commit();
+            commitFragmentTransaction(fragmentTransaction);
 
             nextFragment.setOnCreatedViewListener(new BaseManagerFragment.OnCreatedViewListener() {
                 @Override
@@ -894,7 +891,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             });
         } else {
             fragmentTransaction.add(fragmentViewId(), nextFragment, nextFragment.getHashTag());
-            fragmentTransaction.commit();
+            commitFragmentTransaction(fragmentTransaction);
             fragmentOnCreateShow(nextFragment);
         }
         list.add(nextFragment);
@@ -907,7 +904,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         }
 
         if(view.getBackground() == null)
-            view.setBackgroundColor(ContextCompat.getColor(this, R.color.white));
+            view.setBackgroundColor(Color.WHITE);
 
         Animation animation = AnimationUtils.loadAnimation(this, animRes);
         animation.setAnimationListener(new Animation.AnimationListener() {

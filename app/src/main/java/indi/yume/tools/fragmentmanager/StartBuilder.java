@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.support.annotation.AnimRes;
 import android.support.annotation.Nullable;
 
-import indi.yume.tools.renderercalendar.R;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Wither;

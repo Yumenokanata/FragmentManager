@@ -1,6 +1,5 @@
 package indi.yume.tools.fragmentmanager;
 
-import indi.yume.tools.renderercalendar.R;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
