@@ -8,6 +8,7 @@ import indi.yume.tools.fragmentmanager.functions.ActionTrunk
 import indi.yume.tools.fragmentmanager.functions.playNull
 import indi.yume.tools.fragmentmanager.model.*
 import io.reactivex.Completable
+import io.reactivex.Observable
 import io.reactivex.Single
 import java.lang.UnsupportedOperationException
 import java.util.*
@@ -19,13 +20,20 @@ import java.util.*
 abstract class Action {
     abstract fun reduce(oldState: ManagerState): ManagerState
 
+    abstract fun middleware(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Observable<Action>
+}
+
+abstract class NormalAction : Action() {
+    override fun middleware(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Observable<Action> =
+            effect(realWorld, oldState, newState).toObservable()
+
     abstract fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable
 }
 
 //<editor-fold desc="Fragment Actions">
 
 abstract class TargetAction(val activityKey: (ManagerState) -> ActivityKey?,
-                            val commitFun: CommitFun) : Action() {
+                            val commitFun: CommitFun) : NormalAction() {
     override fun reduce(oldState: ManagerState): ManagerState =
             oldState.doForTargetItem(activityKey(oldState)) { reduce(it) }
 
@@ -167,8 +175,8 @@ class DeleteAction(val targetTag: String,
 class EmptyAction : Action() {
     override fun reduce(oldState: ManagerState): ManagerState = oldState
 
-    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable =
-            Completable.complete()
+    override fun middleware(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Observable<Action> =
+            Observable.empty()
 }
 
 class ModifyAction(
@@ -235,7 +243,7 @@ class SwitchAction(
     }
 }
 
-class FinishAction : Action() {
+class FinishAction : NormalAction() {
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
     }
@@ -254,8 +262,8 @@ class BackAction : Action() {
         return oldState
     }
 
-    override fun effect(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Completable {
-        return playNull {
+    override fun middleware(realWorld: RealWorld, oldState: ManagerState, newState: ManagerState): Observable<Action> {
+        return playNull<Observable<Action>> {
             val currentActivityKey = oldState.currentActivity.bind()
             val currentActivity = oldState.getState(currentActivityKey).bind()
             val currentActivityItem = realWorld.getActivityData(currentActivityKey).bind()
@@ -263,8 +271,8 @@ class BackAction : Action() {
             val list = currentActivity.getCurrentStack()
 
             if (list == null || list.isEmpty() || list.size == 1) {
-                return@playNull if(!currentActivityItem.activity.onBackPressed(list?.size ?: 0))
-                    ApplicationStore.stackManager.dispatch { FinishAction() }.toCompletable()
+                return@playNull if (!currentActivityItem.activity.onBackPressed(list?.size ?: 0))
+                    Observable.just(FinishAction())
                 else
                     null
             }
@@ -274,15 +282,14 @@ class BackAction : Action() {
             if (topFragment.fragment.onBackPressed() || currentActivityItem.activity.onBackPressed(list.size))
                 return@playNull null
 
-            return@playNull ApplicationStore.stackManager.dispatch { DeleteAction(stackTag, hashTag) }
-                    .toCompletable()
-        } ?: Completable.complete()
+            return@playNull Observable.just(DeleteAction(stackTag, hashTag))
+        } ?: Observable.empty()
     }
 }
 //</editor-fold>
 
 //<editor-fold desc="Activity Lifecycle Actions">
-internal class OnCreateAction private constructor(val activityKey: ActivityKey) : Action() {
+internal class OnCreateAction private constructor(val activityKey: ActivityKey) : NormalAction() {
     constructor(activity: ManageableActivity): this(ApplicationStore.activityStore.getKey(activity)
             ?: throw NullPointerException("Must call ApplicationStore.activityStore.onCreate() first"))
 
@@ -295,7 +302,7 @@ internal class OnCreateAction private constructor(val activityKey: ActivityKey) 
     }
 }
 
-internal class OnResumeAction(val activityKey: ActivityKey) : Action() {
+internal class OnResumeAction(val activityKey: ActivityKey) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
@@ -322,7 +329,7 @@ internal class OnResumeAction(val activityKey: ActivityKey) : Action() {
     }
 }
 
-internal class OnPauseAction(val activityKey: ActivityKey) : Action() {
+internal class OnPauseAction(val activityKey: ActivityKey) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState
@@ -349,7 +356,7 @@ internal class OnPauseAction(val activityKey: ActivityKey) : Action() {
     }
 }
 
-internal class OnDestroyAction(val activityKey: ActivityKey) : Action() {
+internal class OnDestroyAction(val activityKey: ActivityKey) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         return oldState.onDestroy(activityKey)
@@ -362,7 +369,7 @@ internal class OnDestroyAction(val activityKey: ActivityKey) : Action() {
 //</editor-fold>
 
 //<editor-fold desc="Base Actions">
-class TransactionAction(val list: List<ActionTrunk>) : Action() {
+class TransactionAction(val list: List<ActionTrunk>) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         throw UnsupportedOperationException("TransactionAction can not be real reduce")
@@ -374,7 +381,7 @@ class TransactionAction(val list: List<ActionTrunk>) : Action() {
 }
 
 class GenAction(val initAction: ActionTrunk = { EmptyAction() },
-                val generator: (ManagerState, Action) -> Action?) : Action() {
+                val generator: (ManagerState, Action) -> Action?) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         throw UnsupportedOperationException("TransactionAction can not be real reduce")
@@ -385,7 +392,7 @@ class GenAction(val initAction: ActionTrunk = { EmptyAction() },
     }
 }
 
-class CallbackAction(val callback: (ManagerState) -> Unit) : Action() {
+class CallbackAction(val callback: (ManagerState) -> Unit) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState {
         callback(oldState)
@@ -399,7 +406,7 @@ class CallbackAction(val callback: (ManagerState) -> Unit) : Action() {
 
 class LambdaAction(val reducer: (ManagerState) -> ManagerState = { it },
                    val effectFun: (realWorld: RealWorld, oldState: ManagerState, newState: ManagerState) -> Completable =
-                           { _, _, _ -> Completable.complete() }) : Action() {
+                           { _, _, _ -> Completable.complete() }) : NormalAction() {
 
     override fun reduce(oldState: ManagerState): ManagerState = reducer(oldState)
 

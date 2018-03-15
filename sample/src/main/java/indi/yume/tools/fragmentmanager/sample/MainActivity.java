@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import indi.yume.tools.fragmentmanager.ActionUtilKt;
-import indi.yume.tools.fragmentmanager.ClassCreator;
 import indi.yume.tools.fragmentmanager.DefaultAppCompatActivity;
 import indi.yume.tools.fragmentmanager.FragmentCreator;
 import indi.yume.tools.fragmentmanager.model.ManagerState;
@@ -92,8 +91,8 @@ public class MainActivity extends DefaultAppCompatActivity {
     @Override
     public Map<String, FragmentCreator> getBaseFragmentWithTag() {
         Map<String, FragmentCreator> map = new HashMap<>();
-        map.put("tag1", new ClassCreator(BlankFragment11.class));
-        map.put("tag2", new ClassCreator(BlankFragment21.class));
+        map.put("tag1", new FragmentCreator(BlankFragment11.class));
+        map.put("tag2", new FragmentCreator(BlankFragment21.class));
         return map;
     }
 }

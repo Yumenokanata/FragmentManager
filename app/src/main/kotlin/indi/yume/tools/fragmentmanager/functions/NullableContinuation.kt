@@ -13,9 +13,9 @@ import kotlin.coroutines.experimental.startCoroutine
  */
 
 
-fun <B> playNull(c: suspend NullableContinuation<*>.() -> B): B? {
-    val continuation = NullableContinuation<B>()
-    val wrapReturn: suspend NullableContinuation<*>.() -> B = { c() }
+fun <B> playNull(c: suspend NullableContinuation<*>.() -> B?): B? {
+    val continuation = NullableContinuation<B?>()
+    val wrapReturn: suspend NullableContinuation<*>.() -> B? = { c() }
     wrapReturn.startCoroutine(continuation, continuation)
     return continuation.returnValue()
 }

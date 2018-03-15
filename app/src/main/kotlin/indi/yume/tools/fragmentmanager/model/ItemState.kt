@@ -2,7 +2,6 @@ package indi.yume.tools.fragmentmanager.model
 
 import android.content.Intent
 import android.os.Bundle
-import indi.yume.tools.fragmentmanager.ClassCreator
 import indi.yume.tools.fragmentmanager.FragmentCreator
 import indi.yume.tools.fragmentmanager.StartBuilder
 
@@ -39,7 +38,7 @@ data class ItemState(
     constructor(targetTag: String,
                 backItemHashTag: String?,
                 builder: StartBuilder) : this(
-            creator = ClassCreator(Class.forName(builder.intent.component.className)),
+            creator = FragmentCreator(Class.forName(builder.intent.component.className)),
             fromIntent = builder.intent,
             animData = builder.anim,
             stackTag = targetTag,
@@ -68,7 +67,7 @@ data class ItemState(
         }
 
         fun empty(stackTag: String, clazz: Class<*>): ItemState {
-            return ItemState(stackTag, ClassCreator(clazz))
+            return ItemState(stackTag, FragmentCreator(clazz))
         }
     }
 }

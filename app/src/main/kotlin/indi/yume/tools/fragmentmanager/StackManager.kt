@@ -1,23 +1,16 @@
 package indi.yume.tools.fragmentmanager
 
 import android.support.annotation.CheckResult
-import android.support.annotation.IdRes
-import android.support.v4.app.FragmentTransaction
 import indi.yume.tools.fragmentmanager.event.Action
 import indi.yume.tools.fragmentmanager.event.EmptyAction
 import indi.yume.tools.fragmentmanager.event.GenAction
 import indi.yume.tools.fragmentmanager.event.TransactionAction
 import indi.yume.tools.fragmentmanager.functions.ActionTrunk
+import indi.yume.tools.fragmentmanager.functions.toTrunk
 import indi.yume.tools.fragmentmanager.model.ManagerState
 import io.reactivex.*
-import io.reactivex.internal.schedulers.NewThreadScheduler
 import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
-import org.slf4j.LoggerFactory
-import java.lang.Exception
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 /**
  * Created by yume on 17-4-10.
@@ -37,8 +30,8 @@ class StackManager : Store<StateData, ActionTrunk>(
             return action.reduce(oldState)
         }
 
-        private fun middleware(oldState: ManagerState, newState: ManagerState, action: Action): Completable {
-            return action.effect(ApplicationStore, oldState, newState)
+        private fun middleware(oldState: ManagerState, newState: ManagerState, action: Action): Observable<Action> {
+            return action.middleware(ApplicationStore, oldState, newState)
         }
 
         private fun handAction(stateData: Single<StateData>, trunk: ActionTrunk): Single<StateData> {
@@ -73,7 +66,10 @@ class StackManager : Store<StateData, ActionTrunk>(
                         val newStateData = StateData(inputStateData.newState, reduce(inputStateData.newState, action), action)
 
                         middleware(newStateData.oldState, newStateData.newState, newStateData.event)
-                                .toSingleDefault(newStateData)
+                                .reduce(Single.just(newStateData), { oldStateS, act ->
+                                    handAction(oldStateS, act.toTrunk())
+                                })
+                                .flatMap { it }
                     }
                 }
             }

@@ -81,7 +81,6 @@ interface ManageableFragment {
 
 
     fun finish() {
-        preBackResultData()
         playNull {
             val valFragmentItem = fragmentItem.bind()
             val valActivityItem = activityItem.bind()

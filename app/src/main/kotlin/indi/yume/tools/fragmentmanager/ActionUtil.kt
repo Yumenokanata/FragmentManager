@@ -23,23 +23,16 @@ import indi.yume.tools.fragmentmanager.model.AnimData
  * Created by yume on 17-4-13.
  */
 
-sealed class FragmentCreator {
-    abstract fun create(): Fragment
+data class FragmentCreator(val clazz: String) {
+    constructor(jClass: Class<*>): this(jClass.name)
+
+    fun create(): Fragment = Class.forName(clazz).newInstance() as Fragment
 
     companion object {
         fun fromIntent(intent: Intent): FragmentCreator =
-                ClassCreator(Class.forName(intent.component.className))
+                FragmentCreator(Class.forName(intent.component.className))
     }
 }
-
-data class ClassCreator(val clazz: Class<*>) : FragmentCreator() {
-    override fun create(): Fragment = clazz.newInstance() as Fragment
-}
-
-data class InstantsCreator(val fragment: Fragment) : FragmentCreator() {
-    override fun create(): Fragment = fragment
-}
-
 
 @CheckResult
 fun ActivityItem.start(startBuilder: StartBuilder): Single<StateData> {

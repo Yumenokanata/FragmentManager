@@ -37,7 +37,6 @@ val commit: CommitFun = { manager, f ->
         transaction.commit()
         completeable
     }
-            .subscribeOn(AndroidSchedulers.mainThread())
 }
 
 val commitNow: CommitFun = { manager, f ->
@@ -47,7 +46,6 @@ val commitNow: CommitFun = { manager, f ->
         transaction.commitNow()
         completeable
     }
-            .subscribeOn(AndroidSchedulers.mainThread())
 }
 
 val commitAllowingStateLoss: CommitFun = { manager, f ->
@@ -57,7 +55,6 @@ val commitAllowingStateLoss: CommitFun = { manager, f ->
         transaction.commitAllowingStateLoss()
         completeable
     }
-            .subscribeOn(AndroidSchedulers.mainThread())
 }
 
 val commitNowAllowingStateLoss: CommitFun = { manager, f ->
@@ -67,7 +64,6 @@ val commitNowAllowingStateLoss: CommitFun = { manager, f ->
         transaction.commitNowAllowingStateLoss()
         completeable
     }
-            .subscribeOn(AndroidSchedulers.mainThread())
 }
 
 
