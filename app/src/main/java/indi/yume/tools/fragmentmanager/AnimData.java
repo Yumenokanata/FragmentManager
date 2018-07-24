@@ -13,11 +13,11 @@ import java.io.Serializable;
 @Builder
 @AllArgsConstructor
 public class AnimData implements Serializable {
-    @Builder.Default private int enterAnim = -1;
-    @Builder.Default private int exitAnim = -1;
+    @Builder.Default private int enterAnim = 0;
+    @Builder.Default private int exitAnim = 0;
     @Builder.Default private int stayAnim = R.anim.stay_anim;
 
     public boolean isEmpty() {
-        return enterAnim == -1 && exitAnim == -1;
+        return enterAnim == 0 && exitAnim == 0;
     }
 }

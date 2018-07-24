@@ -51,12 +51,12 @@ public abstract class BaseManagerFragment extends Fragment {
 
     @AnimRes
     protected int provideEnterAnim() {
-        return -1;
+        return 0;
     }
 
     @AnimRes
     protected int provideExitAnim() {
-        return -1;
+        return 0;
     }
 
     @AnimRes

@@ -66,7 +66,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         int fragmentAnim = fragment.provideExitAnim();
         if(anim != null && !anim.isEmpty())
             return anim.getExitAnim();
-        else if(fragmentAnim == -1)
+        else if(fragmentAnim == 0)
             return fragmentExitAnim;
         else
             return fragmentAnim;
@@ -282,7 +282,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
 
         BaseManagerFragment fragment = getFragmentByClass(fragmentClass);
         if(fragment != null
-                && (fragment.provideEnterAnim() != -1 || fragment.provideExitAnim() != -1))
+                && (fragment.provideEnterAnim() != 0 || fragment.provideExitAnim() != 0))
             return AnimData.builder()
                     .enterAnim(fragment.provideEnterAnim())
                     .exitAnim(fragment.provideExitAnim())
@@ -322,7 +322,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
                 overridePendingTransition(anim);
                 intent.putExtra(INTENT_KEY_ANIM_DATA, anim);
             } else
-                overridePendingTransition(-1, -1);
+                overridePendingTransition(0, 0);
         } else {
             checkThread();
             AnimData anim = enableAnimation ?
@@ -348,12 +348,12 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         if(anim != null && !anim.isEmpty())
             overridePendingTransition(anim.getEnterAnim(), anim.getStayAnim());
         else
-            overridePendingTransition(-1, -1);
+            overridePendingTransition(0, 0);
     }
 
     @Nullable
     private AnimData defaultAnimData() {
-        if(fragmentEnterAnim == -1 || fragmentExitAnim == -1)
+        if(fragmentEnterAnim == 0 || fragmentExitAnim == 0)
             return null;
         return AnimData.builder()
                 .enterAnim(fragmentEnterAnim)
@@ -795,7 +795,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         List<BaseManagerFragment> list = fragmentMap.get(tag);
         list = list == null ? new LinkedList<BaseManagerFragment>() : list;
         if(list.size() <= 1) {
-            int exitAnim = -1;
+            int exitAnim = 0;
             if(list.size() == 1) {
                 BaseManagerFragment fragment = list.get(0);
                 fragment.preBackResultData();
@@ -824,7 +824,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             fragmentTransaction.show(fragment1);
 
             int exitAnim = getExitAnim(fragment);
-            if(exitAnim == -1) {
+            if(exitAnim == 0) {
                 commitFragmentTransaction(fragmentTransaction.remove(fragment));
             } else {
                 commitFragmentTransaction(fragmentTransaction);

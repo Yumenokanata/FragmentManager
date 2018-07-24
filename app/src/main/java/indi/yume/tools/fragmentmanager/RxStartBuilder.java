@@ -22,8 +22,8 @@ public class RxStartBuilder {
     @Wither protected boolean checkThrottle = isThrottleOpen();
     @Wither protected boolean enableAnimation = true;
     @Wither protected Class<? extends SingleBaseActivity> newActivity;
-    @Wither @AnimRes protected int enterAnim = -1;
-    @Wither @AnimRes protected int exitAnim = -1;
+    @Wither @AnimRes protected int enterAnim = 0;
+    @Wither @AnimRes protected int exitAnim = 0;
     @Wither @AnimRes protected int stayAnim = R.anim.stay_anim;
 
     protected RxStartBuilder(Intent intent) {
@@ -45,7 +45,7 @@ public class RxStartBuilder {
 
     @Nullable
     public AnimData getAnim() {
-        if(enterAnim == -1 || exitAnim == -1)
+        if(enterAnim == 0 || exitAnim == 0)
             return null;
 
         return AnimData.builder()

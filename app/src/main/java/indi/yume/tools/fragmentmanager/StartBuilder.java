@@ -16,14 +16,16 @@ import static indi.yume.tools.fragmentmanager.ThrottleUtil.isThrottleOpen;
 @AllArgsConstructor
 @Data
 public class StartBuilder {
+    public static boolean DEFAULT_ENABLE_ANIMATION = true;
+
     private final Intent intent;
     @Wither private int requestCode = -1;
     @Wither private boolean clearCurrentStack = false;
     @Wither private boolean checkThrottle = isThrottleOpen();
-    @Wither private boolean enableAnimation = true;
+    @Wither private boolean enableAnimation = DEFAULT_ENABLE_ANIMATION;
     @Wither private Class<? extends SingleBaseActivity> newActivity;
-    @Wither @AnimRes private int enterAnim = -1;
-    @Wither @AnimRes private int exitAnim = -1;
+    @Wither @AnimRes private int enterAnim = 0;
+    @Wither @AnimRes private int exitAnim = 0;
     @Wither @AnimRes private int stayAnim = R.anim.stay_anim;
 
     private StartBuilder(Intent intent) {
@@ -45,7 +47,7 @@ public class StartBuilder {
 
     @Nullable
     public AnimData getAnim() {
-        if(enterAnim == -1 || exitAnim == -1)
+        if(enterAnim == 0 || exitAnim == 0)
             return null;
 
         return AnimData.builder()
