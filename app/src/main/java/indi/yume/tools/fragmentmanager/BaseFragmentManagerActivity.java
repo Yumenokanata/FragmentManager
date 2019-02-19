@@ -826,6 +826,7 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
             int exitAnim = getExitAnim(fragment);
             if(exitAnim == 0) {
                 commitFragmentTransaction(fragmentTransaction.remove(fragment));
+                fragment1.onShow(OnShowMode.ON_BACK);
             } else {
                 commitFragmentTransaction(fragmentTransaction);
 
