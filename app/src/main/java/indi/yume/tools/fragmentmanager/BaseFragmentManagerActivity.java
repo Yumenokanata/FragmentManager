@@ -557,6 +557,24 @@ public abstract class BaseFragmentManagerActivity extends AppCompatActivity {
         }
     }
 
+    public void backToTop() {
+        String tag = currentStackTag;
+        if(fragmentMap.containsKey(tag) && fragmentMap.get(tag).size() > 1) {
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+            List<BaseManagerFragment> list = fragmentMap.get(tag);
+            for (BaseManagerFragment fragment : list.subList(1, list.size()))
+                fragmentTransaction.remove(fragment);
+            BaseManagerFragment topFragment = list.get(0);
+            fragmentMap.put(tag, list.subList(0, 1));
+
+            fragmentTransaction.show(topFragment);
+
+            commitFragmentTransaction(fragmentTransaction);
+            topFragment.onShow(OnShowMode.ON_BACK);
+        }
+    }
+
     public void clearCurrentStack(){
         clearCurrentStack(false);
     }

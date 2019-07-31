@@ -59,8 +59,9 @@ public class BlankFragment12 extends BaseManagerFragment {
 //                        .withEnterAnim(R.anim.fragment_left_enter)
 //                        .withExitAnim(R.anim.fragment_left_exit)
 //                        .start(BlankFragment12.this);
-                getManagerActivity().switchToStackByTag("tag2");
-                finish();
+//                getManagerActivity().switchToStackByTag("tag2");
+//                finish();
+                getManagerActivity().backToTop();
             }
         });
     }
