@@ -10,7 +10,9 @@ Fragment切换方法的封装
 6. 自定义Fragment切换动画  
 7. (__2.4.0 NEW__)加入侧滑返回
 
-##  3.x版本全新来袭
+## 3.x版本由于技术设计上的硬伤, 已停止开发; 2.x版本系列还会fix bug一段时间; 而本库将逐渐由功能更强大、设计更优秀的下一代导航工具[YRoute](https://github.com/Yumenokanata/YRoute)来替代(YRoute just support Kotlin), 欢迎迁移到[YRoute](https://github.com/Yumenokanata/YRoute)
+
+##  ~~3.x版本全新来袭~~ 
 3.x版本使用函数式架构完全重构，带来更加优美的新特性
 1. Kotlin实现
 2. 全面升级为RxJava2
@@ -19,9 +21,9 @@ Fragment切换方法的封装
 5. 全新状态管理方式，带来状态序列化、状态重现等高级特性
 6. 部分实现使用面向组合子设计，灵活清晰
 
-## 注意：3.x版本目前还属于初期开发阶段，很多以前的特性还没有实现，功能和稳定性上更推荐2.x版本(最新为2.7.0)，但后续会持续更新并更多维护3.x版本了，接口会尽量保持和老版本相同
+~~注意：3.x版本目前还属于初期开发阶段，很多以前的特性还没有实现，功能和稳定性上更推荐2.x版本(最新为2.7.0)，但后续会持续更新并更多维护3.x版本了，接口会尽量保持和老版本相同~~
 
-> 现在3.x版本只实现了Fragment普通方式启动、ResultData回调、BackPress处理功能、Rx启动方式，其他如侧滑返回、新Activity启动Fragment等高级功能将在后续更新中实现，敬请期待
+> 现在3.x版本只实现了Fragment普通方式启动、ResultData回调、BackPress处理功能、Rx启动方式，~~其他如侧滑返回、新Activity启动Fragment等高级功能将在后续更新中实现，敬请期待~~
 
 ## 添加到Android studio
 Step1: 在根build.gradle中添加仓库：
