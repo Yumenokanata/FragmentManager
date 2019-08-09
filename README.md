@@ -9,8 +9,9 @@ Fragment切换方法的封装
 5. 使用Rx的方式启动Fragment: startFragmentForObservable(Intent intent)  
 6. 自定义Fragment切换动画  
 7. (__2.4.0 NEW__)加入侧滑返回
+8. 2.x版本已经在很多实际项目中长期使用, 有足够的稳定性
 
-## 3.x版本由于技术设计上的硬伤, 已停止开发; 2.x版本系列还会fix bug一段时间; 而本库将逐渐由功能更强大、设计更优秀的下一代导航工具[YRoute](https://github.com/Yumenokanata/YRoute)来替代(YRoute just support Kotlin), 欢迎迁移到[YRoute](https://github.com/Yumenokanata/YRoute)
+## 3.x版本由于技术设计上的硬伤, 已停止开发; 2.x版本系列还会继续维护; 而本库将逐渐由功能更强大、设计更优秀的下一代导航工具[YRoute](https://github.com/Yumenokanata/YRoute)来替代(YRoute just support Kotlin), 欢迎迁移到[YRoute](https://github.com/Yumenokanata/YRoute)
 
 ##  ~~3.x版本全新来袭~~ 
 3.x版本使用函数式架构完全重构，带来更加优美的新特性
